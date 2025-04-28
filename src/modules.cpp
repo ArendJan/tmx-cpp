@@ -7,14 +7,57 @@ Modules::Modules(std::shared_ptr<TMX> tmx) {
   using namespace std::placeholders;
 
   this->tmx = tmx;
+  this->tmx->module_sys = this;
   tmx->add_callback(MESSAGE_IN_TYPE::MODULE_REPORT, std::bind(&Modules::callback, this, _1));
+  // this->check_features();
+}
+
+void Modules::check_features() {
+  std::cout << "Checking for modules" << std::endl;
+  {
+    for(auto i = 0; i < MODULE_TYPE::MAX; i++) {
+      std::cout << "Checking for module " << (int)i << std::endl;
+      tmx->sendMessage(MESSAGE_TYPE::MODULE_NEW, {0, (uint8_t)i});
+      std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    }
+  }
+}
+
+void Modules::report_features(MODULE_TYPE type, bool ok, std::vector<uint8_t> data) {
+  if (type >= MODULE_TYPE::MAX) {
+    std::cout << "Module type out of range" << std::endl;
+    return;
+  }
+  if (ok) {
+    std::cout << "Module " << (int)type << " is supported" << std::endl;
+    this->module_features.push_back({type, data});
+  } else {
+    std::cout << "Module " << (int)type << " is not supported" << std::endl;
+  }
 }
 
 int Modules::add_module(uint8_t mod_num, MODULE_TYPE type, std::vector<uint8_t> data,
                         std::function<void(std::vector<uint8_t>)> callback) {
+  // check if module feature is available
+  if (type >= MODULE_TYPE::MAX) {
+    std::cout << "Module type out of range" << std::endl;
+    return -1;
+  }
+  bool found = false;
+  for(auto i = 0; i < this->module_features.size(); i++) {
+    if (this->module_features[i].first == type) {
+      std::cout << "Module " << (int)type << " found list" << std::endl;
+      found = true;
+      break;
+    }
+  }
+  if (!found) {
+    std::cout << "Module " << (int)type << " not found" << std::endl;
+    return -1;
+  }
   modules.push_back(std::make_pair(type, callback));
   std::vector<uint8_t> addModMsg(data.begin(), data.end());
-  addModMsg.insert(addModMsg.begin(), {mod_num, (uint8_t)type});
+  addModMsg.insert(addModMsg.begin(), {1, mod_num, (uint8_t)type}); // 1: add module
 
   tmx->sendMessage(MESSAGE_TYPE::MODULE_NEW, addModMsg);
   return modules.size() - 1;

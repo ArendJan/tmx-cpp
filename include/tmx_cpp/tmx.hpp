@@ -11,7 +11,8 @@
 #include <thread>
 #include <utility>
 #include <vector>
-
+#include <optional>
+#include <ctime>
 #include "async_serial/AsyncSerial.h"
 
 #include "tmx_cpp/message_types.hpp"
@@ -23,6 +24,9 @@ namespace tmx_cpp {
 
 using callback_func = std::function<void(std::vector<uint8_t>)>;
 using callback_vec = std::vector<callback_func>;
+using callback_opt_vec = std::vector<std::optional<callback_func>>;
+using callback_opt_time_vec = std::vector<std::pair<std::time_t, std::optional<callback_func>>>;
+
 using callback_func_pin = std::function<void(uint8_t, uint8_t)>;
 using callback_func_pin16 = std::function<void(uint8_t, uint16_t)>;
 using callback_func_pin_int = std::function<void(uint8_t, int8_t)>;
@@ -37,9 +41,9 @@ public:
   callback_vec digital_callbacks;
   callback_vec analog_callbacks;
   callback_vec servo_unavailable_callbacks;
-  callback_vec i2c_write_callbacks;
-  callback_vec i2c_read_failed_callbacks;
-  callback_vec i2c_read_callbacks;
+  callback_opt_time_vec i2c_write_callbacks;
+  // callback_opt_vec i2c_read_failed_callbacks;
+  callback_opt_time_vec i2c_read_callbacks;
   callback_vec sonar_distance_callbacks;
   callback_vec dht_callbacks;
   callback_vec spi_callbacks;
@@ -53,7 +57,7 @@ public:
   std::vector<std::pair<uint8_t, callback_func_pin16>> analog_callbacks_pin;
   std::vector<std::pair<uint8_t, callback_func_pin_int>> encoder_callbacks_pin; // todo check types
   std::vector<std::pair<uint8_t, callback_func_pin16>> sonar_callbacks_pin;
-
+  std::vector<std::pair<uint8_t, std::vector<uint8_t>>> features;
   void add_callback(MESSAGE_IN_TYPE type,
                     std::function<void(const std::vector<uint8_t> &)> callback);
   void add_digital_callback(uint8_t pin, std::function<void(uint8_t, uint8_t)> callback);
@@ -65,7 +69,8 @@ public:
   boost::asio::thread_pool parsePool;
   void stop();
   // Sensors sensors;
-
+  Modules* module_sys;
+  // std::shared_ptr<Sensors> sensor_sys;
 public:
   TMX(std::function<void()> stop_func, std::string port = "/dev/ttyACM0",
       size_t parse_pool_size = std::thread::hardware_concurrency());
@@ -88,11 +93,11 @@ public:
   void digitalWrite(uint8_t pin, bool value);
   void pwmWrite(uint8_t pin, uint16_t value);
 
-  void attach_encoder(uint8_t pin_A, uint8_t pin_B, callback_func_pin_int callback);
+  bool attach_encoder(uint8_t pin_A, uint8_t pin_B, callback_func_pin_int callback);
 
   /// The sonar callback and return value is in centimeters, as specified by the original telemetrix
   /// protocol.
-  void attach_sonar(uint8_t trigger, uint8_t echo, std::function<void(uint8_t, uint16_t)> callback);
+  bool attach_sonar(uint8_t trigger, uint8_t echo, std::function<void(uint8_t, uint16_t)> callback);
 
   // TODO: Maybe add angle remapping
   void attach_servo(uint8_t pin, uint16_t min_pulse = 1000, uint16_t max_pulse = 2000);
@@ -101,8 +106,18 @@ public:
 
   void setScanDelay(uint8_t delay);
   bool setI2CPins(uint8_t sda, uint8_t scl, uint8_t port);
+  bool i2cWrite(uint8_t port, uint8_t address, std::vector<uint8_t> data,
+                std::function<void(bool, std::vector<uint8_t>)> callback, bool nostop = false); // TODO: add timeout
+  bool i2cRead(uint8_t port, uint8_t address, uint8_t len, std::vector<uint8_t> data,
+                std::function<void(bool, std::vector<uint8_t>)> callback); // TODO: add timeout
   std::shared_ptr<CallbackAsyncSerial> serial;
-
+  bool reset_bootloader() {
+    if(this->get_feature(MESSAGE_TYPE::BOOTLOADER_RESET).first) {
+      sendMessage(MESSAGE_TYPE::BOOTLOADER_RESET, {});
+      return true;
+    }
+    return false;
+  }
   static bool check_port(const std::string &port);
   struct serial_port {
     std::string port_name;
@@ -128,6 +143,14 @@ private:                   /* Ping related elements */
   void ping_task();
   void ping_callback(const std::vector<uint8_t> msg);
   std::function<void()> stop_func;
+
+  std::thread feature_detect_thread;
+  void feature_detect_task();
+  bool feature_detected = false;
+  std::pair<bool, std::vector<uint8_t>> get_feature(const enum MESSAGE_TYPE type);
+  std::mutex feature_mutex;
+  std::condition_variable feature_cv;
+  int feature_index = 0;
 };
 
 } // namespace tmx_cpp

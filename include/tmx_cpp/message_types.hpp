@@ -41,6 +41,9 @@ enum struct MESSAGE_TYPE : uint8_t {
   MODULE_DATA = 34,
   GET_ID = 35,
   SET_ID = 36,
+  FEATURE_REQUEST = 37,
+  BOOTLOADER_RESET = 38,
+  MAX
 };
 
 enum struct MESSAGE_IN_TYPE : uint8_t {
@@ -60,9 +63,11 @@ enum struct MESSAGE_IN_TYPE : uint8_t {
   DEBUG_PRINT = 99,
   SENSOR_REPORT = 20,
   PONG_REPORT = 32,
-  MODULE_REPORT = 34,
+  MODULE_MAIN_REPORT = 33, // data from the module system
+  MODULE_REPORT = 34, // data from a module
   GET_ID_REPORT = (uint8_t)MESSAGE_TYPE::GET_ID,
   SET_ID_REPORT = (uint8_t)MESSAGE_TYPE::SET_ID,
+  FEATURE_REQUEST_REPORT = (uint8_t)MESSAGE_TYPE::FEATURE_REQUEST,
 };
 
 } // namespace tmx_cpp
