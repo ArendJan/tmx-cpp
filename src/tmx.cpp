@@ -137,7 +137,7 @@ void TMX::parseOne_task(const std::vector<uint8_t> &message) {
     auto value = decode_u16(std::span(message).subspan<3, sizeof(uint16_t)>());
     for (const auto &callback : this->analog_callbacks_pin) {
       if (callback.first == pin) {
-        callback.second(pin + 26, value);
+        callback.second(pin, value);
       }
     }
 
@@ -499,10 +499,10 @@ void TMX::add_digital_callback(uint8_t pin, std::function<void(uint8_t, uint8_t)
 
 void TMX::add_analog_callback(uint8_t pin, std::function<void(uint8_t, uint16_t)> callback) {
   // FIXME: This is Pico specific code
-  if (pin < 26 || pin > 30) { // only pins 26-30 are analog
-    return;
-  }
-  this->analog_callbacks_pin.push_back({pin - 26, callback});
+  // if (pin < 26 || pin > 30) { // only pins 26-30 are analog
+  //   return;
+  // }
+  this->analog_callbacks_pin.push_back({pin, callback});
   std::cout << "analog_callbacks_pin size = " << this->analog_callbacks_pin.size() << std::endl;
 }
 

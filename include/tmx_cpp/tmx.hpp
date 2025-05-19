@@ -139,6 +139,7 @@ public:
   static bool set_id(const serial_port &port, uint8_t id);
   static std::pair<bool, std::vector<uint8_t>>
   parse_buffer_for_message(std::vector<uint8_t> &buffer, uint8_t len, uint8_t type);
+  std::pair<bool, std::vector<uint8_t>> get_feature(const enum MESSAGE_TYPE type);
 
 private:                   /* Ping related elements */
   std::thread ping_thread; // TODO: jthread from c++20
@@ -154,7 +155,6 @@ private:                   /* Ping related elements */
   std::thread feature_detect_thread;
   void feature_detect_task();
   bool feature_detected = false;
-  std::pair<bool, std::vector<uint8_t>> get_feature(const enum MESSAGE_TYPE type);
   std::mutex feature_mutex;
   std::condition_variable feature_cv;
   int feature_index = 0;
