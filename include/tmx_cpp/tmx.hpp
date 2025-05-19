@@ -19,7 +19,13 @@
 #include "tmx_cpp/modules.hpp"
 #include "tmx_cpp/sensors.hpp"
 #include "tmx_cpp/types.hpp"
-
+#include "tmx_cpp/board_features.hpp"
+// #define TMX_TX_DEBUG 1
+#ifdef TMX_TX_DEBUG
+#define TMX_DEBUG 1 && 
+#else
+#define TMX_DEBUG 0 &&
+#endif
 namespace tmx_cpp {
 
 using callback_func = std::function<void(std::vector<uint8_t>)>;
@@ -33,6 +39,7 @@ using callback_func_pin_int = std::function<void(uint8_t, int8_t)>;
 
 class TMX {
 public:
+  BoardFeatures board_features;
   std::vector<uint8_t> buffer;
   // normal callbacks
   callback_vec ping_callbacks;

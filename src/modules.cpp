@@ -13,10 +13,12 @@ Modules::Modules(std::shared_ptr<TMX> tmx) {
 }
 
 void Modules::check_features() {
-  std::cout << "Checking for modules" << std::endl;
+  // std::cout << "Checking for modules" << std::endl;
   {
     for(auto i = 0; i < MODULE_TYPE::MAX; i++) {
-      std::cout << "Checking for module " << (int)i << std::endl;
+      #ifdef TMX_TX_DEBUG
+      std::cout << "Checking for module type " << (int)i << std::endl;
+      #endif
       tmx->sendMessage(MESSAGE_TYPE::MODULE_NEW, {0, (uint8_t)i});
       std::this_thread::sleep_for(std::chrono::milliseconds(50));
     }
@@ -29,10 +31,14 @@ void Modules::report_features(MODULE_TYPE type, bool ok, std::vector<uint8_t> da
     return;
   }
   if (ok) {
+    #ifdef TMX_TX_DEBUG
     std::cout << "Module " << (int)type << " is supported" << std::endl;
+    #endif
     this->module_features.push_back({type, data});
   } else {
+    #ifdef TMX_TX_DEBUG
     std::cout << "Module " << (int)type << " is not supported" << std::endl;
+    #endif
   }
 }
 
@@ -46,13 +52,15 @@ int Modules::add_module(uint8_t mod_num, MODULE_TYPE type, std::vector<uint8_t> 
   bool found = false;
   for(auto i = 0; i < this->module_features.size(); i++) {
     if (this->module_features[i].first == type) {
+      #ifdef TMX_TX_DEBUG
       std::cout << "Module " << (int)type << " found list" << std::endl;
+      #endif
       found = true;
       break;
     }
   }
   if (!found) {
-    std::cout << "Module " << (int)type << " not found" << std::endl;
+    std::cout << "Module type " << (int)type << " not found" << std::endl;
     return -1;
   }
   modules.push_back(std::make_pair(type, callback));

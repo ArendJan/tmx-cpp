@@ -19,6 +19,7 @@ add_library(tmx_cpp
   src/tmx.cpp
   src/tmx_util.cpp
   src/serialization.cpp
+  src/board_features.cpp
   src/modules.cpp
   src/modules/HiwonderServo.cpp
   src/modules/PCA9685.cpp
