@@ -24,35 +24,39 @@ TMX::TMX(std::function<void()> stop_func, std::string port, size_t parse_pool_si
 
   this->ping_thread = std::thread(&TMX::ping_task, this);
   this->add_callback(MESSAGE_IN_TYPE::PONG_REPORT, std::bind(&TMX::ping_callback, this, _1));
-  // this->add_callback(
-  //   MESSAGE_IN_TYPE::ANALOG_REPORT, [](std::vector<uint8_t> t) { t[1] = 3; });
+  
+  this->feature_detect_thread = std::thread(&TMX::feature_detect_task, this);
 }
 
 TMX::~TMX() { this->stop(); }
 
 void TMX::callback(const char *data, size_t len) {
-  // std::cout << "callback" << std::endl;
-  // std::cout << "len =" << len << std::endl;
-  // std::cout << "data: ";
+  #ifdef TMX_TX_DEBUG
+  std::cout << "callback" << std::endl;
+  std::cout << "len =" << len << std::endl;
+  std::cout << "data: ";
 
-  // for (int i = 0; i < len; i++)
-  // {
-  //     std::cout << std::hex << (int)data[i] << " ";
-  // }
-  // std::cout << std::endl;
-  // std::cout.write(data, len);
-  // std::cout.flush();
+  for (int i = 0; i < len; i++)
+  {
+      std::cout << std::hex << (int)data[i] << " ";
+  }
+  std::cout << std::endl;
+  std::cout.write(data, len);
+  std::cout.flush();
+  #endif
   this->buffer.insert(this->buffer.end(), data, data + len);
   while (this->buffer.size() >= this->buffer[0] + 1) {
     this->parse(this->buffer);
   }
-  // std::cout << "end buffer size: " << this->buffer.size() << std::endl;
-  // std::cout << "end buffer: ";
-  // for (auto i : this->buffer)
-  // {
-  //     std::cout << std::hex << (int)i << " ";
-  // }
-  // std::cout << "end buff " << std::endl;
+  #ifdef TMX_TX_DEBUG
+  std::cout << "end buffer size: " << this->buffer.size() << std::endl;
+  std::cout << "end buffer: ";
+  for (auto i : this->buffer)
+  {
+      std::cout << std::hex << (int)i << " ";
+  }
+  std::cout << "end buff " << std::endl;
+  #endif
 }
 void TMX::parse(std::vector<uint8_t> &buffer) {
   // length of the message: buffer[0]
@@ -79,7 +83,7 @@ void TMX::parse(std::vector<uint8_t> &buffer) {
   this->parseOne(subBuffer);
 }
 void TMX::parseOne(const std::vector<uint8_t> &message) {
-#ifdef TMX_RX_DEBUG
+#ifdef TMX_TX_DEBUG
   std::cout << "R charMessage = ";
   for (auto i : message) {
     std::cout << std::hex << (uint)(i & 0xFF) << " ";
@@ -95,6 +99,7 @@ void TMX::parseOne_task(const std::vector<uint8_t> &message) {
   // Makes it possible to have longer running callbacks without interfering with
   // other callbacks and reading in data.
 
+  // msg: {len, type, ...}
   auto type = (MESSAGE_IN_TYPE)message[1];
   switch (type) {
   case MESSAGE_IN_TYPE::PONG_REPORT: {
@@ -132,7 +137,7 @@ void TMX::parseOne_task(const std::vector<uint8_t> &message) {
     auto value = decode_u16(std::span(message).subspan<3, sizeof(uint16_t)>());
     for (const auto &callback : this->analog_callbacks_pin) {
       if (callback.first == pin) {
-        callback.second(pin + 26, value);
+        callback.second(pin, value);
       }
     }
 
@@ -148,18 +153,66 @@ void TMX::parseOne_task(const std::vector<uint8_t> &message) {
     }
   } break;
   case MESSAGE_IN_TYPE::I2C_WRITE_REPORT: {
-    for (const auto &callback : this->i2c_write_callbacks) {
-      callback(message);
+    auto msg_id = message[3];
+    if(msg_id >= this->i2c_write_callbacks.size()){
+      std::cout << "I2C write callback not found: " << (int)msg_id << std::endl;
+      return;
+    }
+    auto callback = this->i2c_write_callbacks[msg_id];
+      if(callback.second){
+        callback.second->operator()(message);
+    } else {
+      std::cout << "I2C write callback not found: " << (int)msg_id << std::endl;
+    }
+    callback.second.reset();
+
+    for(auto &callback : this->i2c_write_callbacks) {
+      if (callback.first + 2 < std::time(nullptr)) {
+        callback.second->operator()({
+            0,0,0,0,0 // failed write callback as it took over 2sec.
+        });
+        callback.second.reset();
+      }
+    }
+
+    // clear all callbacks if all are empty, to save memory
+    // TODO: this is not thread safe, need to use mutex
+    if(std::all_of(this->i2c_write_callbacks.begin(), this->i2c_write_callbacks.end(), [](const auto &callback) {
+      return !callback.second;
+    })){
+      this->i2c_write_callbacks.clear();
     }
   } break;
-  case MESSAGE_IN_TYPE::I2C_READ_FAILED: {
-    for (const auto &callback : this->i2c_read_failed_callbacks) {
-      callback(message);
-    }
+  case MESSAGE_IN_TYPE::I2C_READ_FAILED: { // TODO: this is not used anymore
+    std::cout << "I2C read failed msg, but not used" << std::endl;
   } break;
   case MESSAGE_IN_TYPE::I2C_READ_REPORT: {
-    for (const auto &callback : this->i2c_read_callbacks) {
-      callback(message);
+    auto msg_id = message[3];
+    if(msg_id >= this->i2c_read_callbacks.size()){
+      std::cout << "I2C read callback not found: " << (int)msg_id << std::endl;
+      return;
+    }
+    auto callback = this->i2c_read_callbacks[msg_id];
+      if(callback.second){
+        callback.second->operator()(message);
+    } else {
+      std::cout << "I2C read callback not found: " << (int)msg_id << std::endl;
+    }
+    callback.second.reset();
+    for(auto &callback : this->i2c_read_callbacks) {
+      if (callback.first + 2 < std::time(nullptr)) {
+        callback.second->operator()({
+            0,0,0,0,0 // failed write callback as it took over 2sec.
+        });
+        callback.second.reset();
+      }
+    }
+    // clear all callbacks if all are empty, to save memory
+    // TODO: this is not thread safe, need to use mutex
+    if(std::all_of(this->i2c_read_callbacks.begin(), this->i2c_read_callbacks.end(), [](const auto &callback) {
+      return !callback.second;
+    })){
+      this->i2c_read_callbacks.clear();
     }
   } break;
   case MESSAGE_IN_TYPE::SONAR_DISTANCE: {
@@ -221,6 +274,25 @@ void TMX::parseOne_task(const std::vector<uint8_t> &message) {
       callback(message);
     }
   } break;
+  case MESSAGE_IN_TYPE::MODULE_MAIN_REPORT: {
+    // std::cout << "Module main report" << std::endl;
+    auto type = message[2];
+    if(type == 0) {
+      // feature check
+      auto feature = message[3];
+      auto ok = message[4];
+      #ifdef TMX_TX_DEBUG
+      if (ok) {
+        std::cout << "Feature " << (int)feature << " is supported" << std::endl;
+      } else {
+        std::cout << "Feature " << (int)feature << " is not supported" << std::endl;
+      }
+      #endif
+      this->module_sys->report_features((MODULE_TYPE)feature, ok,
+          std::vector<uint8_t>(message.begin() + 3, message.end()));
+    }
+  }
+  break;
   case MESSAGE_IN_TYPE::MODULE_REPORT: {
     for (const auto &callback : this->module_callbacks) {
       callback(message);
@@ -234,6 +306,42 @@ void TMX::parseOne_task(const std::vector<uint8_t> &message) {
     std::cout << "Set id not implemented" << std::endl;
     std::cout << "ID = " << std::hex << (uint)message[2] << std::endl;
   } break;
+  case MESSAGE_IN_TYPE::FEATURE_REQUEST_REPORT: {
+    // msg type: message_type, okay, ... remaining options depending on type(sonar size, ...)
+    // print msg
+    #ifdef TMX_TX_DEBUG
+    std::cout << "Feature request msg: ";
+    for (auto i = 0; i < message.size(); i++) {
+      std::cout << std::hex << (int)message[i] << " ";
+    }
+    std::cout << std::endl;
+    #endif
+    auto msg_type = message[2];
+    auto ok = message[3];
+    while(this->features.size() < msg_type+1){
+      // std::cout << "Feature request: " << (int)msg_type << " resize" << std::endl;
+      this->features.push_back({0,{}});
+
+    }
+    // std::cout << "Feature request: " << (int)msg_type << " ok:" << (int)ok << std::endl;
+    // this->features[msg_type].clear();
+    #ifdef TMX_TX_DEBUG
+    if(ok) {
+      std::cout << "Feature request: " << (int)msg_type << " is ok"<< std::endl;
+    } else {
+      std::cout << "Feature request: " << (int)msg_type << " is not ok"<< std::endl;
+    }
+    #endif
+    this->features[msg_type].first = ok;
+    this->features[msg_type].second ={message.begin() + 4, message.end()};
+    // std::cout << "features value" << (int)this->features[msg_type].first << std::endl;
+    // std::cout << "Feature request done: " << (int)msg_type << " " << (int)ok << std::endl;
+    this->feature_index = msg_type;
+    this->feature_cv.notify_all(); // notify other threads that a feature is checked and that they can continue
+    this->board_features.parse_features({
+        message.begin() + 2, message.end()});
+  }
+  break;
   default:
     break;
   }
@@ -258,6 +366,10 @@ void TMX::sendMessage(const std::vector<uint8_t> &message) {
  * Send a message with some type. Length added automatically.
  */
 void TMX::sendMessage(MESSAGE_TYPE type, const std::vector<uint8_t> &message) {
+  if(type!=MESSAGE_TYPE::FEATURE_REQUEST &&  !this->get_feature(type).first) {
+    std::cout << "Feature not supported: " << (int)type << std::endl;
+    return;
+  }
   std::vector<char> charMessage(message.begin(), message.end());
   charMessage.insert(charMessage.begin(), {(char)(charMessage.size() + 1), (char)type});
 
@@ -285,10 +397,16 @@ void TMX::setPinMode(uint8_t pin, TMX::PIN_MODES mode, bool reporting,
     message = std::vector<uint8_t>{pin, mode};
     break;
   case TMX::PIN_MODES::ANALOG_INPUT:
-    if (pin < 26 || pin > 30) { // only pins 26-30 are analog
+    pin -= this->board_features.analog_offset;
+
+    if (pin < 0) {
+      std::cout << "Analog pin out of range" << std::endl;
       return;
     }
-    pin -= 26;
+    if (pin > this->board_features.analog_pins) {
+      std::cout << "Analog pin out of range" << std::endl;
+      return;
+    }
     message = std::vector<uint8_t>{pin, mode};
     // message.reserve(message.size() + sizeof(uint16_t) + sizeof(reporting));
 
@@ -334,13 +452,13 @@ void TMX::add_callback(MESSAGE_IN_TYPE type,
     this->analog_callbacks.push_back(callback);
     break;
   case MESSAGE_IN_TYPE::I2C_WRITE_REPORT:
-    this->i2c_write_callbacks.push_back(callback);
+    this->i2c_write_callbacks.push_back({0,callback});
     break;
-  case MESSAGE_IN_TYPE::I2C_READ_FAILED:
-    this->i2c_read_failed_callbacks.push_back(callback);
+  // case MESSAGE_IN_TYPE::I2C_READ_FAILED:
+  //   this->i2c_read_failed_callbacks.push_back(callback);
     break;
   case MESSAGE_IN_TYPE::I2C_READ_REPORT:
-    this->i2c_read_failed_callbacks.push_back(callback);
+    // this->i2c_read_callbacks.push_back(callback);
     break;
   case MESSAGE_IN_TYPE::SONAR_DISTANCE:
     this->sonar_distance_callbacks.push_back(callback);
@@ -381,28 +499,65 @@ void TMX::add_digital_callback(uint8_t pin, std::function<void(uint8_t, uint8_t)
 
 void TMX::add_analog_callback(uint8_t pin, std::function<void(uint8_t, uint16_t)> callback) {
   // FIXME: This is Pico specific code
-  if (pin < 26 || pin > 30) { // only pins 26-30 are analog
-    return;
-  }
-  this->analog_callbacks_pin.push_back({pin - 26, callback});
+  // if (pin < 26 || pin > 30) { // only pins 26-30 are analog
+  //   return;
+  // }
+  this->analog_callbacks_pin.push_back({pin, callback});
   std::cout << "analog_callbacks_pin size = " << this->analog_callbacks_pin.size() << std::endl;
 }
 
-void TMX::attach_encoder(uint8_t pin_A, uint8_t pin_B,
+bool TMX::attach_encoder(uint8_t pin_A, uint8_t pin_B,
                          std::function<void(uint8_t, int8_t)> callback) {
+  auto feature = this->get_feature(MESSAGE_TYPE::ENCODER_NEW);
+  if(!feature.first) {
+    std::cout << "encoders not supported by hw" << std::endl;
+    return false;
+  }
+  if(feature.second.size() < 2){
+    std::cout << "Encoder not supported size err " << std::endl;
+    return false;
+  }
+  if(this->board_features.max_encoders <=this->encoder_callbacks_pin.size()) {
+    std::cout << "encoders at max capacity" << std::endl;
+    return false;
+  }
+
+
+
   this->encoder_callbacks_pin.push_back({pin_A, callback});
   uint8_t type = 2;                  // 'default' on quadrature encoder
   if (pin_B == 0xff || pin_B == 0) { // if pin_B is not set, go back to single
     pin_B = 0;
     type = 1;
   }
+
+  if(type == 2 && this->board_features.encoder_dirs == 1) {
+    std::cout << "hardware only supports single pin encoders, no quadrature" << std::endl;
+    type = 1;
+  }
   this->sendMessage(MESSAGE_TYPE::ENCODER_NEW, {type, pin_A, pin_B});
+  return true;
 }
 
-void TMX::attach_sonar(uint8_t trigger, uint8_t echo,
+bool TMX::attach_sonar(uint8_t trigger, uint8_t echo,
                        std::function<void(uint8_t, uint16_t)> callback) {
+
+  auto feature = this->get_feature(MESSAGE_TYPE::SONAR_NEW);
+  if(!feature.first){
+    std::cout << "Sonar not supported" << std::endl;
+    return false;
+  }
+  if(feature.second.size() < 1){
+    std::cout << "Sonar not supported size err " << std::endl;
+    return false;
+  }
+  if(feature.second[0] <= this->sonar_callbacks_pin.size()){
+    std::cout << "Sonar at max capacity" << std::endl;
+    return false;
+  }
   this->sonar_callbacks_pin.push_back({trigger, callback});
   this->sendMessage(MESSAGE_TYPE::SONAR_NEW, {trigger, echo});
+  return true;
 }
 
 void TMX::attach_servo(uint8_t pin, uint16_t min_pulse, uint16_t max_pulse) {
@@ -468,6 +623,51 @@ bool TMX::setI2CPins(uint8_t sda, uint8_t scl, uint8_t port) {
   return true;
 }
 
+bool TMX::i2cWrite(uint8_t port, uint8_t address, std::vector<uint8_t> data,
+                std::function<void(bool, std::vector<uint8_t>)> callback, bool nostop) {
+  // this->i2c_write_callbacks.push_back(callback);
+  auto msg_id = (uint8_t)this->i2c_write_callbacks.size();
+
+  std::vector<uint8_t> message = {port, address, msg_id, (uint8_t)data.size(), nostop };
+  append_range(message, data);
+  this->sendMessage(MESSAGE_TYPE::I2C_WRITE, message);
+  auto i2c_cb = [&callback](std::vector<uint8_t> msg) {
+    std::cout << "I2C write callback" << std::endl;
+    std::cout << "msg: ";
+    for (auto i : msg) {
+      std::cout << std::hex << (int)i << " ";
+    }
+    std::cout << std::endl;
+    bool ok = msg[4];
+    callback(ok, msg);
+
+  };
+  this->i2c_write_callbacks.push_back({std::time(nullptr), i2c_cb});
+  return true;
+}
+
+bool TMX::i2cRead(uint8_t port, uint8_t address, uint8_t len, std::vector<uint8_t> data,
+  std::function<void(bool, std::vector<uint8_t>)> callback) {
+  // this->i2c_write_callbacks.push_back(callback);
+  auto msg_id = (uint8_t)this->i2c_read_callbacks.size();
+
+  std::vector<uint8_t> message = {port, address, msg_id, (uint8_t)data.size() }; // TODO: dit werkt niet op een pico, die kan alleen 1 register aan ipv langere berichten.
+  append_range(message, data);
+  this->sendMessage(MESSAGE_TYPE::I2C_READ, message);
+  auto i2c_cb = [&callback](std::vector<uint8_t> msg) {
+    std::cout << "I2C read callback" << std::endl;
+    std::cout << "msg: ";
+    for (auto i : msg) {
+      std::cout << std::hex << (int)i << " ";
+    }
+    std::cout << std::endl;
+    bool ok = msg[4];
+    callback(ok, msg);
+  };
+  this->i2c_read_callbacks.push_back({std::time(nullptr), i2c_cb});
+  return true;
+}
+
 std::pair<bool, std::vector<uint8_t>> TMX::parse_buffer_for_message(std::vector<uint8_t> &buffer,
                                                                     uint8_t wanted_len,
                                                                     uint8_t wanted_type) {
@@ -516,13 +716,28 @@ bool TMX::check_port(const std::string &port) {
       serial->write({0, 0, 0, 0, 0, 0, 0, 1,
                      (uint8_t)MESSAGE_TYPE::FIRMWARE_VERSION}); // send a get fw version message
       std::this_thread::sleep_for(
-          std::chrono::milliseconds(100)); // pico should respond within 100ms
+          std::chrono::milliseconds(300)); // pico should respond within 100ms
       serial->close();
+      std::cout << "buffer: ";
+      for (auto i : buffer) {
+        std::cout << std::hex << (int)i << " ";
+      }
+      std::cout << std::endl;
       auto out =
           TMX::parse_buffer_for_message(buffer, 4, (uint8_t)MESSAGE_IN_TYPE::FIRMWARE_REPORT);
+     
+      std::cout << "out: ";
+      for (auto i : out.second) {
+        std::cout << std::hex << (int)i << " ";
+      }
+      std::cout << std::endl;
+      std::cout << "out size: " << out.second.size() << std::endl;
+      std::cout << "out first: " << (int)out.first << std::endl;
       if (out.first) {
+        std::cout << "check port: " << port << " is ok" << std::endl;
         return true;
       } else {
+        std::cout << "check port: " << port << " is not ok" << std::endl;
         return false;
       }
     } catch (std::exception &e) {
@@ -533,7 +748,7 @@ bool TMX::check_port(const std::string &port) {
 
   std::future_status status;
 
-  status = future.wait_for(std::chrono::milliseconds(200));
+  status = future.wait_for(std::chrono::milliseconds(400));
 
   if (status == std::future_status::timeout) {
     // verySlow() is not complete.
@@ -550,8 +765,12 @@ bool TMX::check_port(const std::string &port) {
 
 const std::vector<TMX::serial_port> TMX::accepted_ports = {
     {"", 0x1a86, 0x7523}, // CH340
+    {"", 0x1a86,0x7523}, // CH340
     {"", 0x2E8A, 0x000A}, // RP2040
     {"", 0x2E8A, 0x0009}, // RP2350
+    {"", 0x239a, 0x802b}, // adafruit itsybitsy m4
+    {"", 0x0483, 0x5740}, // stm32f103 blackpill
+
 };
 
 #include <boost/format.hpp> // std::format not yet supported
@@ -656,6 +875,10 @@ bool TMX::set_id(const TMX::serial_port &port, uint8_t id) {
 }
 
 void TMX::ping_task() {
+  if(!this->get_feature(MESSAGE_TYPE::PING).first){
+    std::cout << "ping not supported" << std::endl;
+    return;
+  }
   uint8_t num = 0;
   std::this_thread::sleep_for(std::chrono::milliseconds(1000));
   while (!this->is_stopped) {
@@ -680,4 +903,43 @@ void TMX::ping_callback(const std::vector<uint8_t> message) {
     this->stop_func();
   }
   this->last_ping = message[2];
+}
+
+void TMX::feature_detect_task() {
+  this->feature_detected = false;
+
+  std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+  
+  for (auto i = 0; i < (int)MESSAGE_TYPE::MAX && !this->is_stopped; i++) {
+    std::this_thread::sleep_for(std::chrono::milliseconds(30));
+    this->sendMessage(MESSAGE_TYPE::FEATURE_REQUEST, {(uint8_t)i});
+  }
+  if(this->is_stopped) {
+    return;
+  }
+  {
+    // wait for mutex
+    std::unique_lock<std::mutex> lk(this->feature_mutex);
+    #ifdef TMX_TX_DEBUG
+    std::cout << "Waiting main " << this->feature_index << "..." << ((int)MESSAGE_TYPE::MAX-1) << std::endl;
+    #endif
+    this->feature_cv.wait(lk, [this]{ return this->feature_index >= ((int)MESSAGE_TYPE::MAX-1); });
+    TMX_DEBUG std::cout << "done waiting main " << this->feature_index << std::endl;
+  }
+  TMX_DEBUG std::cout << "Feature detect done" << std::endl;
+  this->feature_detected = true;
+  this->module_sys->check_features();
+}
+
+std::pair<bool, std::vector<uint8_t>> TMX::get_feature(MESSAGE_TYPE type) {
+  if(!this->feature_detected && this->feature_index < (int) type) {
+    std::unique_lock<std::mutex> lk(this->feature_mutex);
+    TMX_DEBUG std::cout << "Waiting " << (int) type << " " << this->feature_index << "... \n";
+    this->feature_cv.wait(lk, [this, type]{ return this->feature_index >= (int)type || this->feature_detected; });
+    TMX_DEBUG std::cout << "done waiting " << (int) type << " " << this->feature_index << std::endl;
+  }
+  if (this->features.size() < (int)type) {
+    return {false, {}};
+  }
+  return this->features[(int)type];
 }

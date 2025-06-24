@@ -25,7 +25,8 @@ public:
                  std::function<void(std::vector<uint8_t>)> callback);
   std::vector<std::pair<MODULE_TYPE, std::function<void(std::vector<uint8_t>)>>> modules;
   std::shared_ptr<TMX> tmx;
-
+  std::vector<std::pair<MODULE_TYPE, std::vector<uint8_t>>> module_features;
+  void report_features(MODULE_TYPE type, bool ok, std::vector<uint8_t> data);
   Modules(std::shared_ptr<TMX> tmx);
   void callback(std::vector<uint8_t> data);
 
@@ -33,7 +34,7 @@ public:
 
   // std::shared_ptr<PCA9685_module> add_pca9685();
   void add_mod(std::shared_ptr<Module_type> module);
-
+  void check_features();
 private:
 };
 void empty_callback(std::vector<uint8_t> data);

@@ -9,6 +9,7 @@ enum MODULE_TYPE : uint8_t {
   HIWONDER_SERVO = 1,
   SHUTDOWN_RELAY = 2, // Not implemented, TODO
   TMX_SSD1306 = 3,
+  MAX
 };
 
 }
