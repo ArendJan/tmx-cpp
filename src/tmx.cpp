@@ -669,7 +669,7 @@ bool TMX::i2cRead(uint8_t port, uint8_t address, uint8_t len, std::vector<uint8_
 }
 
 std::pair<bool, std::vector<uint8_t>> TMX::parse_buffer_for_message(std::vector<uint8_t> &buffer,
-                                                                    uint8_t wanted_len,
+                                                                    uint8_t wanted_len, // including length msgs
                                                                     uint8_t wanted_type) {
   if (buffer.size() < wanted_len) {
     return {false, {}};
@@ -696,7 +696,7 @@ std::pair<bool, std::vector<uint8_t>> TMX::parse_buffer_for_message(std::vector<
                    buffer.begin() + 1 + len); // remove the message
       continue;
     } else {
-      return {true, {buffer.begin() + 1, buffer.begin() + 1 + wanted_len}};
+      return {true, {buffer.begin() + 1, buffer.begin() + wanted_len}};
     }
   }
   return {false, {}};
@@ -713,10 +713,13 @@ bool TMX::check_port(const std::string &port) {
         buffer.insert(buffer.end(), data, data + len);
       });
       buffer.clear();
+            std::this_thread::sleep_for(
+          std::chrono::milliseconds(1000)); // pico should respond within 100ms
+
       serial->write({0, 0, 0, 0, 0, 0, 0, 1,
                      (uint8_t)MESSAGE_TYPE::FIRMWARE_VERSION}); // send a get fw version message
       std::this_thread::sleep_for(
-          std::chrono::milliseconds(300)); // pico should respond within 100ms
+          std::chrono::milliseconds(1000)); // pico should respond within 100ms
       serial->close();
       std::cout << "buffer: ";
       for (auto i : buffer) {
@@ -735,6 +738,7 @@ bool TMX::check_port(const std::string &port) {
       std::cout << "out first: " << (int)out.first << std::endl;
       if (out.first) {
         std::cout << "check port: " << port << " is ok" << std::endl;
+        std::cout << "returning true" << std::endl;
         return true;
       } else {
         std::cout << "check port: " << port << " is not ok" << std::endl;
@@ -748,15 +752,17 @@ bool TMX::check_port(const std::string &port) {
 
   std::future_status status;
 
-  status = future.wait_for(std::chrono::milliseconds(400));
-
+  status = future.wait_for(std::chrono::milliseconds(3000));
+  std::cout << "status: " << (int)status << std::endl;
   if (status == std::future_status::timeout) {
     // verySlow() is not complete.
+    std::cout << "check port: " << port << " timed out" << std::endl;
     return false;
   } else if (status == std::future_status::ready) {
     // verySlow() is complete.
     // Get result from future (if there's a need)
     auto ret = future.get();
+    std::cout << "check port: " << port << " returned: " << ret << std::endl;
     return ret;
   }
 
