@@ -24,6 +24,7 @@ public:
     int digital_pins = 0;
     int analog_pins = 0;
     int analog_offset = 0;
+    std::vector<int> analog_pins_list;
     void parse_features(std::vector<uint8_t> data);
 };
 };

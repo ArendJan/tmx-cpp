@@ -15,6 +15,94 @@
 
 using namespace tmx_cpp;
 
+::std::ostream& operator<<(::std::ostream& out, const MESSAGE_TYPE&value)
+{
+    return out << [value] {
+#define PROCESS_VAL(p) \
+    case (p):          \
+        return #p;
+        switch (value) {
+            PROCESS_VAL(MESSAGE_TYPE::SERIAL_LOOP_BACK);
+            PROCESS_VAL(MESSAGE_TYPE::SET_PIN_MODE);
+            PROCESS_VAL(MESSAGE_TYPE::DIGITAL_WRITE);
+            PROCESS_VAL(MESSAGE_TYPE::PWM_WRITE);
+            PROCESS_VAL(MESSAGE_TYPE::MODIFY_REPORTING);
+            PROCESS_VAL(MESSAGE_TYPE::FIRMWARE_VERSION);
+            PROCESS_VAL(MESSAGE_TYPE::GET_PICO_UNIQUE_ID);
+            PROCESS_VAL(MESSAGE_TYPE::SERVO_ATTACH);
+            PROCESS_VAL(MESSAGE_TYPE::SERVO_WRITE);
+            PROCESS_VAL(MESSAGE_TYPE::SERVO_DETACH);
+            PROCESS_VAL(MESSAGE_TYPE::I2C_BEGIN);
+            PROCESS_VAL(MESSAGE_TYPE::I2C_READ);
+            PROCESS_VAL(MESSAGE_TYPE::I2C_WRITE);
+            PROCESS_VAL(MESSAGE_TYPE::SONAR_NEW);
+            PROCESS_VAL(MESSAGE_TYPE::DHT_NEW);
+            PROCESS_VAL(MESSAGE_TYPE::STOP_ALL_REPORTS);
+            PROCESS_VAL(MESSAGE_TYPE::ENABLE_ALL_REPORTS);
+            PROCESS_VAL(MESSAGE_TYPE::RESET_DATA);
+            PROCESS_VAL(MESSAGE_TYPE::RESET_BOARD);
+            PROCESS_VAL(MESSAGE_TYPE::INITIALIZE_NEO_PIXELS);
+            PROCESS_VAL(MESSAGE_TYPE::SHOW_NEO_PIXELS);
+            PROCESS_VAL(MESSAGE_TYPE::SET_NEO_PIXEL);
+            PROCESS_VAL(MESSAGE_TYPE::CLEAR_ALL_NEO_PIXELS);
+            PROCESS_VAL(MESSAGE_TYPE::FILL_NEO_PIXELS);
+            PROCESS_VAL(MESSAGE_TYPE::SPI_INIT);
+            PROCESS_VAL(MESSAGE_TYPE::SPI_WRITE);
+            PROCESS_VAL(MESSAGE_TYPE::SPI_READ);
+            PROCESS_VAL(MESSAGE_TYPE::SPI_SET_FORMAT);
+            PROCESS_VAL(MESSAGE_TYPE::SPI_CS_CONTROL);
+            PROCESS_VAL(MESSAGE_TYPE::SET_SCAN_DELAY);
+            PROCESS_VAL(MESSAGE_TYPE::ENCODER_NEW);
+            PROCESS_VAL(MESSAGE_TYPE::SENSOR_NEW);
+            PROCESS_VAL(MESSAGE_TYPE::PING);
+            PROCESS_VAL(MESSAGE_TYPE::MODULE_NEW);
+            PROCESS_VAL(MESSAGE_TYPE::MODULE_DATA);
+            PROCESS_VAL(MESSAGE_TYPE::GET_ID);
+            PROCESS_VAL(MESSAGE_TYPE::SET_ID);
+            PROCESS_VAL(MESSAGE_TYPE::FEATURE_REQUEST);
+            PROCESS_VAL(MESSAGE_TYPE::BOOTLOADER_RESET);
+            PROCESS_VAL(MESSAGE_TYPE::MAX);
+
+            default:
+                return "UNKNOWN";
+        }
+#undef PROCESS_VAL
+    }();
+}
+::std::ostream& operator<<(::std::ostream& out, const MESSAGE_IN_TYPE&value)
+{
+    return out << [value] {
+#define PROCESS_VAL(p) \
+    case (p):          \
+        return #p;
+        switch (value) {
+            PROCESS_VAL(MESSAGE_IN_TYPE::SERIAL_LOOP_BACK_REPORT);
+            PROCESS_VAL(MESSAGE_IN_TYPE::DIGITAL_REPORT);
+            PROCESS_VAL(MESSAGE_IN_TYPE::ANALOG_REPORT);
+            PROCESS_VAL(MESSAGE_IN_TYPE::FIRMWARE_REPORT);
+            PROCESS_VAL(MESSAGE_IN_TYPE::REPORT_PICO_UNIQUE_ID);
+            PROCESS_VAL(MESSAGE_IN_TYPE::SERVO_UNAVAILABLE);
+            PROCESS_VAL(MESSAGE_IN_TYPE::I2C_WRITE_REPORT);
+            PROCESS_VAL(MESSAGE_IN_TYPE::I2C_READ_FAILED);
+            PROCESS_VAL(MESSAGE_IN_TYPE::I2C_READ_REPORT);
+            PROCESS_VAL(MESSAGE_IN_TYPE::SONAR_DISTANCE);
+            PROCESS_VAL(MESSAGE_IN_TYPE::DHT_REPORT);
+            PROCESS_VAL(MESSAGE_IN_TYPE::SPI_REPORT);
+            PROCESS_VAL(MESSAGE_IN_TYPE::ENCODER_REPORT);
+            PROCESS_VAL(MESSAGE_IN_TYPE::DEBUG_PRINT);
+            PROCESS_VAL(MESSAGE_IN_TYPE::SENSOR_REPORT);
+            PROCESS_VAL(MESSAGE_IN_TYPE::PONG_REPORT);
+            PROCESS_VAL(MESSAGE_IN_TYPE::MODULE_MAIN_REPORT);
+            PROCESS_VAL(MESSAGE_IN_TYPE::MODULE_REPORT);
+            PROCESS_VAL(MESSAGE_IN_TYPE::GET_ID_REPORT);
+            PROCESS_VAL(MESSAGE_IN_TYPE::SET_ID_REPORT);
+            PROCESS_VAL(MESSAGE_IN_TYPE::FEATURE_REQUEST_REPORT);
+            default:
+                return "UNKNOWN";
+        }
+#undef PROCESS_VAL
+    }();
+}
 TMX::TMX(std::function<void()> stop_func, std::string port, size_t parse_pool_size)
     : parsePool(std::max<size_t>(parse_pool_size, 1)), stop_func(stop_func) {
   using namespace std::placeholders;
@@ -367,7 +455,7 @@ void TMX::sendMessage(const std::vector<uint8_t> &message) {
  */
 void TMX::sendMessage(MESSAGE_TYPE type, const std::vector<uint8_t> &message) {
   if(type!=MESSAGE_TYPE::FEATURE_REQUEST &&  !this->get_feature(type).first) {
-    std::cout << "Feature not supported: " << (int)type << std::endl;
+    std::cout << "Feature not supported: " << type << std::endl;
     return;
   }
   std::vector<char> charMessage(message.begin(), message.end());
@@ -714,12 +802,12 @@ bool TMX::check_port(const std::string &port) {
       });
       buffer.clear();
             std::this_thread::sleep_for(
-          std::chrono::milliseconds(1000)); // pico should respond within 100ms
+          std::chrono::milliseconds(2000)); // pico should respond within 100ms
 
       serial->write({0, 0, 0, 0, 0, 0, 0, 1,
                      (uint8_t)MESSAGE_TYPE::FIRMWARE_VERSION}); // send a get fw version message
       std::this_thread::sleep_for(
-          std::chrono::milliseconds(1000)); // pico should respond within 100ms
+          std::chrono::milliseconds(2000)); // pico should respond within 100ms
       serial->close();
       std::cout << "buffer: ";
       for (auto i : buffer) {
@@ -752,7 +840,7 @@ bool TMX::check_port(const std::string &port) {
 
   std::future_status status;
 
-  status = future.wait_for(std::chrono::milliseconds(3000));
+  status = future.wait_for(std::chrono::milliseconds(5000));
   std::cout << "status: " << (int)status << std::endl;
   if (status == std::future_status::timeout) {
     // verySlow() is not complete.
@@ -776,7 +864,14 @@ const std::vector<TMX::serial_port> TMX::accepted_ports = {
     {"", 0x2E8A, 0x0009}, // RP2350
     {"", 0x239a, 0x802b}, // adafruit itsybitsy m4
     {"", 0x0483, 0x5740}, // stm32f103 blackpill
-
+    {"", 0x10c4, 0xea60}, // CP2102
+    // following ones are hallucinated by copilot, maybe check
+    {"", 0x0403, 0x6001}, // FTDI FT232R
+    {"", 0x0403, 0x6015}, // FTDI FT231X
+    {"", 0x2341, 0x0042}, // Arduino Uno
+    {"", 0x2341, 0x0243}, // Arduino Leonardo
+    {"", 0x2341, 0x8036}, // Arduino Mega
+    {"", 0x2341, 0x8037}, // Arduino Due
 };
 
 #include <boost/format.hpp> // std::format not yet supported

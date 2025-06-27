@@ -71,3 +71,6 @@ enum struct MESSAGE_IN_TYPE : uint8_t {
 };
 
 } // namespace tmx_cpp
+std::ostream& operator<<(std::ostream& out, const tmx_cpp::MESSAGE_IN_TYPE&value);
+
+std::ostream& operator<<(std::ostream& out, const tmx_cpp::MESSAGE_TYPE&value);

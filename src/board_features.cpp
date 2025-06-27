@@ -28,7 +28,12 @@ void BoardFeatures::parse_features(std::vector<uint8_t> data) {
         case MESSAGE_TYPE::SET_PIN_MODE:
             this->digital_pins = data[2];
             this->analog_pins = data[3];
-            this->analog_offset = data[4];
+            // this->analog_offset = data[4];
+            // std::cout << "analog offset " << (int) this->analog_offset << " adfadsf" << std::endl;
+            for(size_t i = 4; i < data.size(); i++) {
+                std::cout << "Analog pin: " << (int)data[i] << std::endl;
+                this->analog_pins_list.push_back(data[i]);
+            }
             break;
     }
     // print all features
