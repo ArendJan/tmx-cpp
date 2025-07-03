@@ -27,17 +27,25 @@ void BoardFeatures::parse_features(std::vector<uint8_t> data) {
             break;
         case MESSAGE_TYPE::SET_PIN_MODE:
             this->digital_pins = data[2];
-            this->analog_pins = data[3];
+            this->analog_bits = data[3];
+            this->pwm_max = std::pow(2, data[4]) - 1; // max value for pwm
+            std::cout << "pwm max: " << this->pwm_max << std::endl;
+            this->analog_pins = data[5];
             // this->analog_offset = data[4];
             // std::cout << "analog offset " << (int) this->analog_offset << " adfadsf" << std::endl;
-            for(size_t i = 4; i < data.size(); i++) {
+            for(size_t i = 6; i < data.size(); i++) {
                 std::cout << "Analog pin: " << (int)data[i] << std::endl;
                 this->analog_pins_list.push_back(data[i]);
             }
             break;
+        case MESSAGE_TYPE::I2C_BEGIN:
+            this->i2c_count = data[2];
+            break;
+        default:
+            break;
     }
     // print all features
-    #define TMX_TX_DEBUG 1
+    // #define TMX_TX_DEBUG 1
     #ifdef TMX_TX_DEBUG
     std::cout << "Features: " << std::endl;
     std::cout << "max_servos: " << (int)this->max_servos << std::endl;

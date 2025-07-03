@@ -34,6 +34,11 @@ public:
 
   // std::shared_ptr<PCA9685_module> add_pca9685();
   void add_mod(std::shared_ptr<Module_type> module);
+
+  // modules feature locking
+  bool module_detected = false;
+  std::mutex module_mutex;
+  std::condition_variable module_cv;
   void check_features();
 private:
 };

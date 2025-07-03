@@ -22,8 +22,11 @@ public:
     int max_sonar = 0;
 
     int digital_pins = 0;
+    int analog_bits = 0;
     int analog_pins = 0;
     int analog_offset = 0;
+    int pwm_max = 0;
+    int i2c_count = 0;
     std::vector<int> analog_pins_list;
     void parse_features(std::vector<uint8_t> data);
 };

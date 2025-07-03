@@ -2,7 +2,7 @@
 #include <tmx_cpp/modules.hpp>
 
 using namespace tmx_cpp;
-
+#define TMX_TX_DEBUG
 Modules::Modules(std::shared_ptr<TMX> tmx) {
   using namespace std::placeholders;
 
@@ -26,6 +26,7 @@ void Modules::check_features() {
 }
 
 void Modules::report_features(MODULE_TYPE type, bool ok, std::vector<uint8_t> data) {
+  std::cout << "report_features: " << (int)type << " ok: " << (int)ok << std::endl;
   if (type >= MODULE_TYPE::MAX) {
     std::cout << "Module type out of range" << std::endl;
     return;
@@ -40,6 +41,16 @@ void Modules::report_features(MODULE_TYPE type, bool ok, std::vector<uint8_t> da
     std::cout << "Module " << (int)type << " is not supported" << std::endl;
     #endif
   }
+  if(type == MODULE_TYPE::MAX - 1) {
+    // last module, notify all waiting threads
+    std::unique_lock<std::mutex> lk(this->module_mutex);
+    this->module_detected = true;
+    this->module_cv.notify_all();
+    #ifdef TMX_TX_DEBUG
+    std::cout << "All modules checked, notifying all waiting threads" << std::endl;
+    #endif
+  }
+  std::cout << "Module features size: " << this->module_features.size() << std::endl;
 }
 
 int Modules::add_module(uint8_t mod_num, MODULE_TYPE type, std::vector<uint8_t> data,
@@ -48,6 +59,15 @@ int Modules::add_module(uint8_t mod_num, MODULE_TYPE type, std::vector<uint8_t> 
   if (type >= MODULE_TYPE::MAX) {
     std::cout << "Module type out of range" << std::endl;
     return -1;
+  }
+  if(!this->module_detected){
+    #ifdef TMX_TX_DEBUG
+    std::cout << "Module not detected yet, waiting..." << std::endl;
+    #endif
+    return 0;
+      std::unique_lock<std::mutex> lk(this->module_mutex);
+
+    this->module_cv.wait(lk, [this]{ return this->module_detected; });
   }
   bool found = false;
   for(auto i = 0; i < this->module_features.size(); i++) {
@@ -73,7 +93,14 @@ int Modules::add_module(uint8_t mod_num, MODULE_TYPE type, std::vector<uint8_t> 
 
 void Modules::add_mod(std::shared_ptr<Module_type> module) {
   using namespace std::placeholders;
+  if(!this->module_detected){
+    #ifdef TMX_TX_DEBUG
+    std::cout << "Module not detected yet, waiting..." << std::endl;
+    #endif
+      std::unique_lock<std::mutex> lk(this->module_mutex);
 
+    this->module_cv.wait(lk, [this]{ return this->module_detected; });
+  }
   auto mod_num = this->modules.size();
   auto init_data = module->init_data();
 

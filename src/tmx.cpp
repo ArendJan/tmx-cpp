@@ -12,7 +12,8 @@
 #include <tmx_cpp/message_types.hpp>
 #include <tmx_cpp/serialization.hpp>
 #include <tmx_cpp/types.hpp>
-
+// #undef TMX_TX_DEBUG
+#include <fstream>
 using namespace tmx_cpp;
 
 ::std::ostream& operator<<(::std::ostream& out, const MESSAGE_TYPE&value)
@@ -108,6 +109,22 @@ TMX::TMX(std::function<void()> stop_func, std::string port, size_t parse_pool_si
   using namespace std::placeholders;
 
   this->serial = std::make_shared<CallbackAsyncSerial>(port, 115200);
+  // sleep for a second
+  this->serial->setCallback([](const char *data, size_t len) {
+    std::cout << "TMX::callback: " << len << " bytes received, ignoring" << std::endl;
+    // std::cout << "TMX::callback: " << len << " bytes received" << std::endl;
+  });
+  std::cout << "TMX: waiting for serial port to be ready" << std::endl;
+  this->serial->write({0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}); // send a newline to the serial port to wake it up
+  std::this_thread::sleep_for(std::chrono::seconds(1));
+  std::cout << "TMX: done waiting for serial port to be ready" << std::endl;
+  // add to file
+  #if 1
+  std::ofstream file("tmx_data.log", std::ios_base::app);
+  file << "TMX: opening serial port: " << port << std::endl;
+  file.flush();
+  file.close();
+  #endif
   this->serial->setCallback([this](const char *data, size_t len) { this->callback(data, len); });
 
   this->ping_thread = std::thread(&TMX::ping_task, this);
@@ -117,8 +134,28 @@ TMX::TMX(std::function<void()> stop_func, std::string port, size_t parse_pool_si
 }
 
 TMX::~TMX() { this->stop(); }
+#include <fstream>
 
 void TMX::callback(const char *data, size_t len) {
+  #if 1
+  // write to some file
+  std::ofstream file("tmx_data.log", std::ios_base::app);
+  file << "callback: len = " << len << " data: ";
+  for(int i = 0; i < len; i++)
+  {
+      file << std::hex << (int)data[i] << " ";
+  }
+  file << std::endl;
+  file.flush();
+  file.close();
+
+  // binary file logging:
+  std::ofstream bin_file("tmx_data.bin", std::ios_base::app | std::ios_base::binary);
+  bin_file.write(data, len);
+  bin_file.flush();
+  bin_file.close();
+
+  #endif
   #ifdef TMX_TX_DEBUG
   std::cout << "callback" << std::endl;
   std::cout << "len =" << len << std::endl;
@@ -189,6 +226,9 @@ void TMX::parseOne_task(const std::vector<uint8_t> &message) {
 
   // msg: {len, type, ...}
   auto type = (MESSAGE_IN_TYPE)message[1];
+  #ifdef TMX_TX_DEBUG
+  std::cout << "parseOne_task: type = " << type << std::endl;
+  #endif
   switch (type) {
   case MESSAGE_IN_TYPE::PONG_REPORT: {
     for (const auto &callback : this->ping_callbacks) {
@@ -449,6 +489,17 @@ void TMX::sendMessage(const std::vector<uint8_t> &message) {
   std::vector<char> charMessage(message.begin(), message.end());
   charMessage.insert(charMessage.begin(), charMessage.size());
   serial->write(charMessage);
+  #if 1
+  std::ofstream file("tmx_data.log", std::ios_base::app);
+  file << "writing: len = " << charMessage.size() << " command = " << (MESSAGE_TYPE)message[0] <<  " data: ";
+  for(int i = 0; i < charMessage.size(); i++)
+  {
+      file << std::hex << (int)charMessage[i] << " ";
+  }
+  file << std::endl;
+  file.flush();
+  file.close();
+  #endif
 }
 /**
  * Send a message with some type. Length added automatically.
@@ -467,8 +518,20 @@ void TMX::sendMessage(MESSAGE_TYPE type, const std::vector<uint8_t> &message) {
     std::cout << std::hex << (uint)(i & 0xFF) << " ";
   }
   std::cout << std::endl;
-#endif
+  
 
+#endif
+#if 1
+  std::ofstream file("tmx_data.log", std::ios_base::app);
+  file << "writing: len = " << charMessage.size() << " data: ";
+  for(int i = 0; i < charMessage.size(); i++)
+  {
+      file << std::hex << (int)charMessage[i] << " ";
+  }
+  file << std::endl;
+  file.flush();
+  file.close();
+  #endif
   serial->write(charMessage);
 }
 void TMX::setPinMode(uint8_t pin, TMX::PIN_MODES mode, bool reporting,
@@ -491,10 +554,10 @@ void TMX::setPinMode(uint8_t pin, TMX::PIN_MODES mode, bool reporting,
       std::cout << "Analog pin out of range" << std::endl;
       return;
     }
-    if (pin > this->board_features.analog_pins) {
-      std::cout << "Analog pin out of range" << std::endl;
-      return;
-    }
+    // if (pin > this->board_features.analog_pins) {
+    //   std::cout << "Analog pin out of range" << std::endl;
+    //   return;
+    // }
     message = std::vector<uint8_t>{pin, mode};
     // message.reserve(message.size() + sizeof(uint16_t) + sizeof(reporting));
 
@@ -664,7 +727,12 @@ void TMX::write_servo(uint8_t pin, uint16_t duty_cycle) {
   // msg.reserve(3);
 
   append_range(msg, encode_u16(duty_cycle));
-
+  std::cout << "write servo: " << (int)pin << " duty_cycle: " << (int)duty_cycle << std::endl;
+  std::cout << "msg: ";
+  for (auto i : msg) {
+    std::cout << std::hex << (int)i << " ";
+  }
+  std::cout << std::endl;
   this->sendMessage(MESSAGE_TYPE::SERVO_WRITE, msg);
 }
 
@@ -797,7 +865,7 @@ bool TMX::check_port(const std::string &port) {
       auto serial = std::make_shared<CallbackAsyncSerial>(port, 115200);
       std::vector<uint8_t> buffer;
       serial->setCallback([&buffer](const char *data, size_t len) {
-        std::cout << "check port len: " << len << std::endl;
+        // std::cout << "check port len: " << len << std::endl;
         buffer.insert(buffer.end(), data, data + len);
       });
       buffer.clear();
@@ -1028,8 +1096,8 @@ void TMX::feature_detect_task() {
     TMX_DEBUG std::cout << "done waiting main " << this->feature_index << std::endl;
   }
   TMX_DEBUG std::cout << "Feature detect done" << std::endl;
-  this->feature_detected = true;
   this->module_sys->check_features();
+  this->feature_detected = true;
 }
 
 std::pair<bool, std::vector<uint8_t>> TMX::get_feature(MESSAGE_TYPE type) {

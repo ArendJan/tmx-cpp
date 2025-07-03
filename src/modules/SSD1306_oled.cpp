@@ -87,7 +87,7 @@ bool SSD1306_module::send_text(std::string text, std::chrono::milliseconds timeo
     return false;
   } else if (supposed_text_length != (uint8_t)truncated_text.length()) {
     // TODO: Improve Warning
-    std::cerr << "Text wrong length" << std::endl;
+    std::cerr << "Text wrong length" << (int)supposed_text_length << ":" << truncated_text.length() << std::endl;
     // TODO: This was not here in the python version, should it be there?
     // return false;
   }
