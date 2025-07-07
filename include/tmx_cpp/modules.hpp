@@ -23,7 +23,8 @@ class Modules {
 public:
   int add_module(uint8_t mod_num, MODULE_TYPE type, std::vector<uint8_t> data,
                  std::function<void(std::vector<uint8_t>)> callback);
-  std::vector<std::pair<MODULE_TYPE, std::function<void(std::vector<uint8_t>)>>> modules;
+  std::vector<std::pair<MODULE_TYPE, std::function<void(std::vector<uint8_t>)>>>
+      modules;
   std::shared_ptr<TMX> tmx;
   std::vector<std::pair<MODULE_TYPE, std::vector<uint8_t>>> module_features;
   void report_features(MODULE_TYPE type, bool ok, std::vector<uint8_t> data);
@@ -40,6 +41,7 @@ public:
   std::mutex module_mutex;
   std::condition_variable module_cv;
   void check_features();
+
 private:
 };
 void empty_callback(std::vector<uint8_t> data);

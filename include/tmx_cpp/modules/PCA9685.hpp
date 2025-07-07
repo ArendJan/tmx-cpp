@@ -22,7 +22,8 @@ public:
 
   std::vector<uint8_t> init_data();
   void data_callback(std::vector<uint8_t> data);
-  void attach_send_module(std::function<void(std::vector<uint8_t>)> send_module);
+  void
+  attach_send_module(std::function<void(std::vector<uint8_t>)> send_module);
 
 private:
   uint8_t i2c_port;

@@ -4,8 +4,8 @@
 
 namespace tmx_cpp {
 
-using VEML6040_cb_t =
-    std::function<void(uint16_t red, uint16_t green, uint16_t blue, uint16_t white)>;
+using VEML6040_cb_t = std::function<void(uint16_t red, uint16_t green,
+                                         uint16_t blue, uint16_t white)>;
 class VEML6040_module : public Sensor_type {
 public:
   std::function<void(std::vector<uint8_t>)> send_module;

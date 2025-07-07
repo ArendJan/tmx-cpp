@@ -7,12 +7,14 @@
 using namespace tmx_cpp;
 using namespace std::chrono_literals;
 
-// TODO: It might be wise to add a mutex on the bus commmands which result in a response, since they
-// currently crash if called while waiting on the other.
+// TODO: It might be wise to add a mutex on the bus commmands which result in a
+// response, since they currently crash if called while waiting on the other.
 
 HiwonderServo_module::HiwonderServo_module(
-    uint8_t uart_port, uint8_t rx_pin, uint8_t tx_pin, std::vector<uint8_t> servo_ids,
-    std::function<void(std::vector<std::tuple<uint8_t, Servo_pos>>)> position_cb) {
+    uint8_t uart_port, uint8_t rx_pin, uint8_t tx_pin,
+    std::vector<uint8_t> servo_ids,
+    std::function<void(std::vector<std::tuple<uint8_t, Servo_pos>>)>
+        position_cb) {
 
   this->servo_ids = servo_ids;
   this->uart_port = uart_port;
@@ -24,19 +26,22 @@ HiwonderServo_module::HiwonderServo_module(
 }
 
 // Returns the pico servo_num
-std::optional<uint8_t> HiwonderServo_module::register_servo_id(uint8_t servo_id) {
+std::optional<uint8_t>
+HiwonderServo_module::register_servo_id(uint8_t servo_id) {
   std::optional<uint8_t> servo_num;
 
   if (servo_id > 253) {
     std::cout << "A HiWonder Servo id must be in the range 0-253, provided id '"
-              << (unsigned int)servo_id << "' is outside of this range." << std::endl;
+              << (unsigned int)servo_id << "' is outside of this range."
+              << std::endl;
     return servo_num;
   }
 
   // Check if the servo_id was already registered
-  if (std::find(this->servo_ids.cbegin(), this->servo_ids.cend(), servo_id) != servo_ids.cend()) {
-    std::cout << "HiWonder Servo with ID '" << (unsigned int)servo_id << "' was already registered."
-              << std::endl;
+  if (std::find(this->servo_ids.cbegin(), this->servo_ids.cend(), servo_id) !=
+      servo_ids.cend()) {
+    std::cout << "HiWonder Servo with ID '" << (unsigned int)servo_id
+              << "' was already registered." << std::endl;
 
     servo_num = get_servo_num(servo_id);
     return servo_num;
@@ -66,8 +71,10 @@ std::optional<uint8_t> HiwonderServo_module::register_servo_id(uint8_t servo_id)
   return servo_num;
 }
 
-bool HiwonderServo_module::set_single_servo(uint8_t servo_id, uint16_t angle, uint16_t time) {
-  std::vector<uint8_t> data = {HIWONDER_SERVO_COMMANDS::SET_SERVO, 1, get_servo_num(servo_id)}; //,
+bool HiwonderServo_module::set_single_servo(uint8_t servo_id, uint16_t angle,
+                                            uint16_t time) {
+  std::vector<uint8_t> data = {HIWONDER_SERVO_COMMANDS::SET_SERVO, 1,
+                               get_servo_num(servo_id)}; //,
   data.reserve(data.size() + 2 * sizeof(uint16_t));
 
   append_range(data, encode_u16(angle));
@@ -81,10 +88,12 @@ bool HiwonderServo_module::set_single_servo(uint8_t servo_id, uint16_t angle, ui
   return true;
 }
 
-bool HiwonderServo_module::set_multiple_servos(std::vector<std::pair<uint8_t, uint16_t>> servo_vals,
-                                               uint16_t time) {
-  std::vector<uint8_t> data = {HIWONDER_SERVO_COMMANDS::SET_SERVO, (uint8_t)servo_vals.size()};
-  data.reserve(data.size() + servo_vals.size() * (2 * sizeof(uint16_t) + sizeof(uint8_t)));
+bool HiwonderServo_module::set_multiple_servos(
+    std::vector<std::pair<uint8_t, uint16_t>> servo_vals, uint16_t time) {
+  std::vector<uint8_t> data = {HIWONDER_SERVO_COMMANDS::SET_SERVO,
+                               (uint8_t)servo_vals.size()};
+  data.reserve(data.size() +
+               servo_vals.size() * (2 * sizeof(uint16_t) + sizeof(uint8_t)));
 
   auto time_bytes = encode_u16(time);
   for (auto servo_val : servo_vals) {
@@ -103,8 +112,8 @@ bool HiwonderServo_module::set_multiple_servos(std::vector<std::pair<uint8_t, ui
 }
 
 bool HiwonderServo_module::set_enable_servo(uint8_t servo_id, bool enable) {
-  std::vector<uint8_t> data = {HIWONDER_SERVO_COMMANDS::SET_ENABLE, 1, get_servo_num(servo_id),
-                               enable};
+  std::vector<uint8_t> data = {HIWONDER_SERVO_COMMANDS::SET_ENABLE, 1,
+                               get_servo_num(servo_id), enable};
   this->send_module(data);
   return true;
 }
@@ -140,8 +149,9 @@ bool HiwonderServo_module::verify_id(uint8_t servo_id) {
   if (future.wait_for(500ms) == std::future_status::ready) {
     auto [id, ok_value] = future.get();
     // assert(id == servo_id);
-    if(id != servo_id) {
-      std::cout << "Servo id("<< (int)servo_id<<") not id ("<<(int)id<<")"<<std::endl;
+    if (id != servo_id) {
+      std::cout << "Servo id(" << (int)servo_id << ") not id (" << (int)id
+                << ")" << std::endl;
       ok_value = false;
     }
     ok = ok_value;
@@ -152,8 +162,10 @@ bool HiwonderServo_module::verify_id(uint8_t servo_id) {
   return ok;
 }
 
-bool HiwonderServo_module::set_range(uint8_t servo_id, uint16_t min, uint16_t max) {
-  std::vector<uint8_t> data = {HIWONDER_SERVO_COMMANDS::SET_RANGE, get_servo_num(servo_id)};
+bool HiwonderServo_module::set_range(uint8_t servo_id, uint16_t min,
+                                     uint16_t max) {
+  std::vector<uint8_t> data = {HIWONDER_SERVO_COMMANDS::SET_RANGE,
+                               get_servo_num(servo_id)};
   // data.reserve(data.size() + 2 * sizeof(uint16_t));
 
   auto min_bytes = encode_u16(min);
@@ -166,10 +178,12 @@ bool HiwonderServo_module::set_range(uint8_t servo_id, uint16_t min, uint16_t ma
   return true;
 }
 
-bool HiwonderServo_module::set_voltage_range(uint8_t servo_id, float minf, float maxf) {
+bool HiwonderServo_module::set_voltage_range(uint8_t servo_id, float minf,
+                                             float maxf) {
   uint16_t min = (uint16_t)(minf * 1000); // convert to mV
   uint16_t max = (uint16_t)(maxf * 1000);
-  std::vector<uint8_t> data = {HIWONDER_SERVO_COMMANDS::SET_VOLTAGE_RANGE, get_servo_num(servo_id)};
+  std::vector<uint8_t> data = {HIWONDER_SERVO_COMMANDS::SET_VOLTAGE_RANGE,
+                               get_servo_num(servo_id)};
   // data.reserve(data.size() + 2*sizeof(uint16_t));
 
   append_range(data, encode_u16(min));
@@ -180,7 +194,8 @@ bool HiwonderServo_module::set_voltage_range(uint8_t servo_id, float minf, float
 }
 
 bool HiwonderServo_module::set_offset(uint8_t servo_id, int16_t offset) {
-  std::vector<uint8_t> data = {HIWONDER_SERVO_COMMANDS::SET_OFFSET, get_servo_num(servo_id)}; //,
+  std::vector<uint8_t> data = {HIWONDER_SERVO_COMMANDS::SET_OFFSET,
+                               get_servo_num(servo_id)}; //,
   // data.reserve(data.size() + sizeof(uint16_t));
   append_range(data, encode_i16(offset));
 
@@ -188,9 +203,11 @@ bool HiwonderServo_module::set_offset(uint8_t servo_id, int16_t offset) {
   return true;
 }
 
-std::optional<std::tuple<uint16_t, uint16_t>> HiwonderServo_module::get_range(uint8_t servo_id) {
+std::optional<std::tuple<uint16_t, uint16_t>>
+HiwonderServo_module::get_range(uint8_t servo_id) {
   assert(!range_promise.has_value());
-  range_promise = std::promise<std::tuple<uint8_t, std::tuple<uint16_t, uint16_t>>>();
+  range_promise =
+      std::promise<std::tuple<uint8_t, std::tuple<uint16_t, uint16_t>>>();
 
   auto servo_num = get_servo_num(servo_id);
   auto future = range_promise->get_future();
@@ -272,8 +289,9 @@ void HiwonderServo_module::data_callback(std::vector<uint8_t> data) {
     return;
   } break;
   case HIWONDER_SERVO_RESPONSES::SERVO_VERIFY: {
-    // assert(verify_id_promise.has_value()); // TODO: REPLACE WITH WARNING INSTEAD OF EXIT -1
-    if(!verify_id_promise.has_value()) {
+    // assert(verify_id_promise.has_value()); // TODO: REPLACE WITH WARNING
+    // INSTEAD OF EXIT -1
+    if (!verify_id_promise.has_value()) {
       return;
     } else {
       verify_id_promise->set_value({(uint8_t)data[1], (bool)data[2]});
@@ -281,29 +299,34 @@ void HiwonderServo_module::data_callback(std::vector<uint8_t> data) {
     return;
   } break;
   case HIWONDER_SERVO_RESPONSES::SERVO_RANGE: {
-    assert(range_promise.has_value()); // TODO: REPLACE WITH WARNING INSTEAD OF EXIT -1
-    range_promise->set_value({(uint8_t)data[1],
-                              {
-                                  decode_u16(data_span.subspan<2, sizeof(uint16_t)>()),
-                                  decode_u16(data_span.subspan<4, sizeof(uint16_t)>()),
-                              }});
+    assert(range_promise
+               .has_value()); // TODO: REPLACE WITH WARNING INSTEAD OF EXIT -1
+    range_promise->set_value(
+        {(uint8_t)data[1],
+         {
+             decode_u16(data_span.subspan<2, sizeof(uint16_t)>()),
+             decode_u16(data_span.subspan<4, sizeof(uint16_t)>()),
+         }});
     return;
   } break;
   case HIWONDER_SERVO_RESPONSES::SERVO_OFFSET: {
-    assert(offset_promise.has_value()); // TODO: REPLACE WITH WARNING INSTEAD OF EXIT -1
+    assert(offset_promise
+               .has_value()); // TODO: REPLACE WITH WARNING INSTEAD OF EXIT -1
     offset_promise->set_value(
-        {(uint8_t)data[1], decode_i16(data_span.subspan<2, sizeof(int16_t)>())});
+        {(uint8_t)data[1],
+         decode_i16(data_span.subspan<2, sizeof(int16_t)>())});
     return;
   } break;
   case HIWONDER_SERVO_RESPONSES::SERVO_ADDED: {
-    assert(add_servo_promise.has_value()); // TODO: REPLACE WITH WARNING INSTEAD OF EXIT -1
+    assert(add_servo_promise
+               .has_value()); // TODO: REPLACE WITH WARNING INSTEAD OF EXIT -1
     add_servo_promise->set_value({(uint8_t)data[1], (uint8_t)data[2]});
     return;
   } break;
 
   default:
-    std::cout << "Unknown message type from Hiwonder servo: " << std::dec << (int)message_type
-              << std::endl;
+    std::cout << "Unknown message type from Hiwonder servo: " << std::dec
+              << (int)message_type << std::endl;
     break;
   }
   return;
@@ -315,7 +338,8 @@ void HiwonderServo_module::attach_send_module(
 }
 
 bool HiwonderServo_module::motor_mode_write(uint8_t servo_id, int16_t speed) {
-  std::vector<uint8_t> data = {HIWONDER_SERVO_COMMANDS::MOTOR_MODE_WRITE, get_servo_num(servo_id)};
+  std::vector<uint8_t> data = {HIWONDER_SERVO_COMMANDS::MOTOR_MODE_WRITE,
+                               get_servo_num(servo_id)};
   append_range(data, encode_i16(speed));
   this->send_module(data);
   return true;

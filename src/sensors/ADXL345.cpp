@@ -8,7 +8,8 @@ using namespace tmx_cpp;
 
 // TODO: Make offset and scaling configurable
 
-ADXL345_module::ADXL345_module(uint8_t i2c_port, uint8_t address, ADXL345_cb_t data_cb)
+ADXL345_module::ADXL345_module(uint8_t i2c_port, uint8_t address,
+                               ADXL345_cb_t data_cb)
     : data_cb(data_cb), i2c_port(i2c_port), address(address) {
   this->type = SENSOR_TYPE::ADXL345;
 }
@@ -32,9 +33,10 @@ void ADXL345_module::data_callback(std::vector<uint8_t> data) {
   // https://github.com/sparkfun/SparkFun_ADXL345_Arduino_Library/blob/6d795cce285d94014c294d297573e33266a4c7d5/src/SparkFun_ADXL345.cpp#L34-L36C15
 
   // FIXME: Do Something with range somewhere...
-  // auto x = 0.00376390f * decode_i16(data_span.subspan<0 * i16_size, i16_size>());
-  // auto y = 0.00376009f * decode_i16(data_span.subspan<1 * i16_size, i16_size>());
-  // auto z = 0.00349265f * decode_i16(data_span.subspan<2 * i16_size, i16_size>());
+  // auto x = 0.00376390f * decode_i16(data_span.subspan<0 * i16_size,
+  // i16_size>()); auto y = 0.00376009f * decode_i16(data_span.subspan<1 *
+  // i16_size, i16_size>()); auto z = 0.00349265f *
+  // decode_i16(data_span.subspan<2 * i16_size, i16_size>());
 
   // [THESE VALUES RESULT IN SLIGHTLY BETTER RESULTS]
   // Scaling values are retrieved from no-OS Driver

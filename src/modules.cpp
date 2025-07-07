@@ -8,73 +8,79 @@ Modules::Modules(std::shared_ptr<TMX> tmx) {
 
   this->tmx = tmx;
   this->tmx->module_sys = this;
-  tmx->add_callback(MESSAGE_IN_TYPE::MODULE_REPORT, std::bind(&Modules::callback, this, _1));
+  tmx->add_callback(MESSAGE_IN_TYPE::MODULE_REPORT,
+                    std::bind(&Modules::callback, this, _1));
   // this->check_features();
 }
 
 void Modules::check_features() {
   // std::cout << "Checking for modules" << std::endl;
   {
-    for(auto i = 0; i < MODULE_TYPE::MAX; i++) {
-      #ifdef TMX_TX_DEBUG
+    for (auto i = 0; i < MODULE_TYPE::MAX; i++) {
+#ifdef TMX_TX_DEBUG
       std::cout << "Checking for module type " << (int)i << std::endl;
-      #endif
+#endif
       tmx->sendMessage(MESSAGE_TYPE::MODULE_NEW, {0, (uint8_t)i});
       std::this_thread::sleep_for(std::chrono::milliseconds(50));
     }
   }
 }
 
-void Modules::report_features(MODULE_TYPE type, bool ok, std::vector<uint8_t> data) {
-  std::cout << "report_features: " << (int)type << " ok: " << (int)ok << std::endl;
+void Modules::report_features(MODULE_TYPE type, bool ok,
+                              std::vector<uint8_t> data) {
+  std::cout << "report_features: " << (int)type << " ok: " << (int)ok
+            << std::endl;
   if (type >= MODULE_TYPE::MAX) {
     std::cout << "Module type out of range" << std::endl;
     return;
   }
   if (ok) {
-    #ifdef TMX_TX_DEBUG
+#ifdef TMX_TX_DEBUG
     std::cout << "Module " << (int)type << " is supported" << std::endl;
-    #endif
+#endif
     this->module_features.push_back({type, data});
   } else {
-    #ifdef TMX_TX_DEBUG
+#ifdef TMX_TX_DEBUG
     std::cout << "Module " << (int)type << " is not supported" << std::endl;
-    #endif
+#endif
   }
-  if(type == MODULE_TYPE::MAX - 1) {
+  if (type == MODULE_TYPE::MAX - 1) {
     // last module, notify all waiting threads
     std::unique_lock<std::mutex> lk(this->module_mutex);
     this->module_detected = true;
     this->module_cv.notify_all();
-    #ifdef TMX_TX_DEBUG
-    std::cout << "All modules checked, notifying all waiting threads" << std::endl;
-    #endif
+#ifdef TMX_TX_DEBUG
+    std::cout << "All modules checked, notifying all waiting threads"
+              << std::endl;
+#endif
   }
-  std::cout << "Module features size: " << this->module_features.size() << std::endl;
+  std::cout << "Module features size: " << this->module_features.size()
+            << std::endl;
 }
 
-int Modules::add_module(uint8_t mod_num, MODULE_TYPE type, std::vector<uint8_t> data,
+int Modules::add_module(uint8_t mod_num, MODULE_TYPE type,
+                        std::vector<uint8_t> data,
                         std::function<void(std::vector<uint8_t>)> callback) {
   // check if module feature is available
   if (type >= MODULE_TYPE::MAX) {
     std::cout << "Module type out of range" << std::endl;
     return -1;
   }
-  if(!this->module_detected){
-    #ifdef TMX_TX_DEBUG
+  if (!this->module_detected) {
+#ifdef TMX_TX_DEBUG
     std::cout << "Module not detected yet, waiting..." << std::endl;
-    #endif
+#endif
     return 0;
-      std::unique_lock<std::mutex> lk(this->module_mutex);
+    std::unique_lock<std::mutex> lk(this->module_mutex);
 
-    this->module_cv.wait(lk, [this]{ return this->module_detected; });
+    this->module_cv.wait(lk, [this] { return this->module_detected; });
   }
   bool found = false;
-  for(auto i = 0; i < this->module_features.size(); i++) {
+  for (auto i = 0; i < this->module_features.size(); i++) {
     if (this->module_features[i].first == type) {
-      #ifdef TMX_TX_DEBUG
+#ifdef TMX_TX_DEBUG
       std::cout << "Module " << (int)type << " found list" << std::endl;
-      #endif
+#endif
       found = true;
       break;
     }
@@ -85,7 +91,8 @@ int Modules::add_module(uint8_t mod_num, MODULE_TYPE type, std::vector<uint8_t> 
   }
   modules.push_back(std::make_pair(type, callback));
   std::vector<uint8_t> addModMsg(data.begin(), data.end());
-  addModMsg.insert(addModMsg.begin(), {1, mod_num, (uint8_t)type}); // 1: add module
+  addModMsg.insert(addModMsg.begin(),
+                   {1, mod_num, (uint8_t)type}); // 1: add module
 
   tmx->sendMessage(MESSAGE_TYPE::MODULE_NEW, addModMsg);
   return modules.size() - 1;
@@ -93,21 +100,23 @@ int Modules::add_module(uint8_t mod_num, MODULE_TYPE type, std::vector<uint8_t> 
 
 void Modules::add_mod(std::shared_ptr<Module_type> module) {
   using namespace std::placeholders;
-  if(!this->module_detected){
-    #ifdef TMX_TX_DEBUG
+  if (!this->module_detected) {
+#ifdef TMX_TX_DEBUG
     std::cout << "Module not detected yet, waiting..." << std::endl;
-    #endif
-      std::unique_lock<std::mutex> lk(this->module_mutex);
+#endif
+    std::unique_lock<std::mutex> lk(this->module_mutex);
 
-    this->module_cv.wait(lk, [this]{ return this->module_detected; });
+    this->module_cv.wait(lk, [this] { return this->module_detected; });
   }
   auto mod_num = this->modules.size();
   auto init_data = module->init_data();
 
-  auto act_mod_num = add_module(mod_num, module->type, init_data,
-                                std::bind(&Module_type::data_callback, module, _1));
-  module->attach_send_module(
-      [this, act_mod_num](std::vector<uint8_t> data) { this->send_module(act_mod_num, data); });
+  auto act_mod_num =
+      add_module(mod_num, module->type, init_data,
+                 std::bind(&Module_type::data_callback, module, _1));
+  module->attach_send_module([this, act_mod_num](std::vector<uint8_t> data) {
+    this->send_module(act_mod_num, data);
+  });
   if (act_mod_num != mod_num) {
     std::cout << "Error adding module" << std::endl;
     return;

@@ -14,8 +14,9 @@ std::vector<uint8_t> encode_u32(const uint32_t &value) {
 }
 
 std::vector<uint8_t> encode_u64(const uint64_t &value) {
-  return {(uint8_t)(value >> 56), (uint8_t)(value >> 48), (uint8_t)(value >> 40),
-          (uint8_t)(value >> 32), (uint8_t)(value >> 24), (uint8_t)(value >> 16),
+  return {(uint8_t)(value >> 56), (uint8_t)(value >> 48),
+          (uint8_t)(value >> 40), (uint8_t)(value >> 32),
+          (uint8_t)(value >> 24), (uint8_t)(value >> 16),
           (uint8_t)(value >> 8),  (uint8_t)(value & 0xFF)};
 }
 
@@ -41,13 +42,14 @@ uint16_t decode_u16(const std::span<const uint8_t, 2> &data) {
 }
 
 uint32_t decode_u32(const std::span<const uint8_t, 4> &data) {
-  return ((uint32_t)data[0] << 24) | ((uint32_t)data[1] << 16) | ((uint32_t)data[2] << 8) |
-         (uint32_t)data[3];
+  return ((uint32_t)data[0] << 24) | ((uint32_t)data[1] << 16) |
+         ((uint32_t)data[2] << 8) | (uint32_t)data[3];
 }
 
 uint64_t decode_u64(const std::span<const uint8_t, 8> &data) {
-  return ((uint64_t)data[0] << 56) | ((uint64_t)data[1] << 48) | ((uint64_t)data[2] << 40) |
-         ((uint64_t)data[3] << 32) | ((uint64_t)data[4] << 24) | ((uint64_t)data[5] << 16) |
+  return ((uint64_t)data[0] << 56) | ((uint64_t)data[1] << 48) |
+         ((uint64_t)data[2] << 40) | ((uint64_t)data[3] << 32) |
+         ((uint64_t)data[4] << 24) | ((uint64_t)data[5] << 16) |
          ((uint64_t)data[6] << 8) | (uint64_t)data[7];
 }
 

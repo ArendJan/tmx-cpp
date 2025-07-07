@@ -6,9 +6,9 @@
 
 namespace tmx_cpp {
 
-using MPU9250_cb_t =
-    std::function<void(std::array<float, 3> acceleration, std::array<float, 3> gyro,
-                       std::array<float, 3> magnetic_field, std::array<float, 4> quaternion)>;
+using MPU9250_cb_t = std::function<void(
+    std::array<float, 3> acceleration, std::array<float, 3> gyro,
+    std::array<float, 3> magnetic_field, std::array<float, 4> quaternion)>;
 class MPU9250_module : public Sensor_type {
 public:
   std::function<void(std::vector<uint8_t>)> send_module;
