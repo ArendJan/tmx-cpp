@@ -12,7 +12,8 @@
 #include <string>
 #include <utility>
 #include <vector>
-
+#include <condition_variable>
+#include <mutex>
 namespace tmx_cpp {
 
 class TMX;
@@ -30,8 +31,16 @@ public:
   Sensors(std::shared_ptr<TMX> tmx);
   void callback(std::vector<uint8_t> data);
   void add_sens(std::shared_ptr<Sensor_type> module);
+  void check_features();
+  void report_features(SENSOR_TYPE type, bool ok, std::vector<uint8_t> data);
+    std::vector<std::pair<SENSOR_TYPE, std::vector<uint8_t>>> sensor_features;
+
   // void add_sensor(std::shared_ptr<Sensor_type> module);
 private:
+ // modules feature locking
+  bool sensor_detected = false;
+  std::mutex sensor_mutex;
+  std::condition_variable sensor_cv;
 };
 
 } // namespace tmx_cpp

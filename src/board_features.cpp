@@ -2,7 +2,7 @@
 #include "tmx_cpp/message_types.hpp"
 #include "tmx_cpp/serialization.hpp"
 #include "tmx_cpp/modules/Module_types.hpp"
-
+#include <math.h>
 using namespace tmx_cpp;
 
 void BoardFeatures::parse_features(std::vector<uint8_t> data) {

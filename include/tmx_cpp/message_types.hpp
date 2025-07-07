@@ -63,6 +63,7 @@ enum struct MESSAGE_IN_TYPE : uint8_t {
   ENCODER_REPORT = 14,
   DEBUG_PRINT = 99,
   SENSOR_REPORT = 20,
+  SENSOR_MAIN_REPORT = 21, // data from the sensor system
   PONG_REPORT = 32,
   MODULE_MAIN_REPORT = 33, // data from the module system
   MODULE_REPORT = 34, // data from a module

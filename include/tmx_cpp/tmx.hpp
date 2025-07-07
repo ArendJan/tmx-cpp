@@ -75,7 +75,7 @@ public:
   void parseOne_task(const std::vector<uint8_t> &buffer);
   boost::asio::thread_pool parsePool;
   void stop();
-  // Sensors sensors;
+  Sensors* sensors_sys;
   Modules* module_sys;
   // std::shared_ptr<Sensors> sensor_sys;
 public:

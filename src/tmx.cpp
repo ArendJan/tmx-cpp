@@ -397,6 +397,25 @@ void TMX::parseOne_task(const std::vector<uint8_t> &message) {
       callback(message);
     }
   } break;
+  case MESSAGE_IN_TYPE::SENSOR_MAIN_REPORT:{
+    std::cout << "Sensor main report" << std::endl;
+    auto type = message[2];
+    if(type == 0) {
+      // feature check
+      auto feature = message[3];
+      auto ok = message[4];
+      #ifdef TMX_TX_DEBUG
+      if (ok) {
+        std::cout << "Feature " << (int)feature << " is supported" << std::endl;
+      } else {
+        std::cout << "Feature " << (int)feature << " is not supported" << std::endl;
+      }
+      #endif
+      this->sensors_sys->report_features((SENSOR_TYPE)feature, ok,
+          std::vector<uint8_t>(message.begin() + 3, message.end()));
+    }
+  }
+  break;
   case MESSAGE_IN_TYPE::SENSOR_REPORT: {
     for (const auto &callback : this->sensor_callbacks) {
       callback(message);
@@ -766,9 +785,9 @@ void TMX::stop() {
 }
 
 bool TMX::setI2CPins(uint8_t sda, uint8_t scl, uint8_t port) {
-  if (sda == 0 || scl == 0 || sda == scl) {
-    return false;
-  }
+  // if (sda == 0 || scl == 0 || sda == scl) {
+  //   // return false;
+  // }
   static bool initialized_ports[2] = {false, false}; // 2 ports for now
   if (initialized_ports[port]) {
     return false;
@@ -1097,6 +1116,7 @@ void TMX::feature_detect_task() {
   }
   TMX_DEBUG std::cout << "Feature detect done" << std::endl;
   this->module_sys->check_features();
+  this->sensors_sys->check_features();
   this->feature_detected = true;
 }
 
