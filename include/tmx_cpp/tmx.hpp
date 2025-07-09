@@ -81,6 +81,7 @@ public:
   void stop();
   std::shared_ptr<Sensors> sensors_sys;
   std::shared_ptr<Modules> module_sys;
+
 public:
   TMX(std::function<void()> stop_func, std::string port = "/dev/ttyACM0",
       size_t parse_pool_size = std::thread::hardware_concurrency());

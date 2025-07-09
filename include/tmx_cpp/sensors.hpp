@@ -29,8 +29,8 @@ public:
   //                      callback); // todo: change to adxl data function
   // void add_veml6040(uint8_t i2c_port,
   //                   std::function<void(std::vector<uint8_t>)> callback);
-  TMX* tmx;
-  Sensors(TMX* tmx);
+  TMX *tmx;
+  Sensors(TMX *tmx);
   void callback(std::vector<uint8_t> data);
   void add_sens(std::shared_ptr<Sensor_type> module);
   void check_features();

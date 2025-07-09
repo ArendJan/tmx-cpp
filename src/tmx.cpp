@@ -104,7 +104,8 @@ using namespace tmx_cpp;
 }
 TMX::TMX(std::function<void()> stop_func, std::string port,
          size_t parse_pool_size)
-    : parsePool(std::max<size_t>(parse_pool_size, 1)), stop_func(stop_func), module_sys(std::make_shared<Modules>(this)),
+    : parsePool(std::max<size_t>(parse_pool_size, 1)), stop_func(stop_func),
+      module_sys(std::make_shared<Modules>(this)),
       sensors_sys(std::make_shared<Sensors>(this)), is_stopped(false) {
   using namespace std::placeholders;
 
@@ -780,7 +781,7 @@ void TMX::setScanDelay(uint8_t delay) {
 }
 
 void TMX::stop() {
-  if(this->is_stopped) {
+  if (this->is_stopped) {
     std::cout << "TMX: already stopped" << std::endl;
     return;
   }
@@ -790,9 +791,9 @@ void TMX::stop() {
   this->feature_detect_thread.join();
   // trigger all conditions to stop waiting for features
   this->feature_cv.notify_all();
-  if (  this->ping_thread.joinable() &&
+  if (this->ping_thread.joinable() &&
       std::this_thread::get_id() != this->ping_thread.get_id()) {
-      this->ping_thread.join();
+    this->ping_thread.join();
   }
   this->stop_func = []() {};
   this->parsePool.stop();
@@ -810,17 +811,18 @@ bool TMX::setI2CPins(uint8_t sda, uint8_t scl, uint8_t port) {
   // if (sda == 0 || scl == 0 || sda == scl) {
   //   // return false;
   // }
-  if(sda == 0 || scl == 0) {
-    if(port !=0 || sda != 0 || scl != 0) { // either all 0
+  if (sda == 0 || scl == 0) {
+    if (port != 0 || sda != 0 || scl != 0) { // either all 0
       return false;
     }
   }
   const size_t MAX_I2C = 3;
-  if(port >= MAX_I2C) {
+  if (port >= MAX_I2C) {
     std::cout << "TMX: I2C port out of range" << std::endl;
     return false;
   }
-  static bool initialized_ports[MAX_I2C] = {false, false, false}; // 2 ports for now
+  static bool initialized_ports[MAX_I2C] = {false, false,
+                                            false}; // 2 ports for now
   if (initialized_ports[port]) {
     return false;
   }
@@ -1145,9 +1147,9 @@ void TMX::ping_callback(const std::vector<uint8_t> message) {
     this->stop_func();
   }
   uint8_t ping_reply = message[2];
-  if(ping_reply -1 != this->last_ping) {
-    std::cout << "Ping reply mismatch: " << (int)ping_reply << " != "
-              << (int)(this->last_ping + 1) << std::endl;
+  if (ping_reply - 1 != this->last_ping) {
+    std::cout << "Ping reply mismatch: " << (int)ping_reply
+              << " != " << (int)(this->last_ping + 1) << std::endl;
     // this->stop_func();
   }
   this->last_ping = ping_reply;
@@ -1191,7 +1193,8 @@ std::pair<bool, std::vector<uint8_t>> TMX::get_feature(MESSAGE_TYPE type) {
     TMX_DEBUG std::cout << "Waiting " << (int)type << " " << this->feature_index
                         << "... \n";
     this->feature_cv.wait(lk, [this, type] {
-      return this->feature_index >= (int)type || this->feature_detected || this->is_stopped;
+      return this->feature_index >= (int)type || this->feature_detected ||
+             this->is_stopped;
     });
     TMX_DEBUG std::cout << "done waiting " << (int)type << " "
                         << this->feature_index << std::endl;

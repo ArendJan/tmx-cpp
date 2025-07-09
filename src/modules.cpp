@@ -3,7 +3,7 @@
 
 using namespace tmx_cpp;
 #define TMX_TX_DEBUG
-Modules::Modules(TMX* tmx): tmx(tmx) {
+Modules::Modules(TMX *tmx) : tmx(tmx) {
   using namespace std::placeholders;
 
   tmx->add_callback(MESSAGE_IN_TYPE::MODULE_REPORT,
