@@ -5,8 +5,8 @@ cmake_minimum_required(VERSION 3.22)
 project(tmx_cpp)
 
 # Find Boost libraries
-# set policy
-cmake_policy(SET CMP0167 NEW)
+# set policy for findboost, not until cmake 3.30.
+# cmake_policy(SET CMP0167 NEW)
 find_package(Boost REQUIRED COMPONENTS system thread)
 
 add_subdirectory(libs/async_serial)
