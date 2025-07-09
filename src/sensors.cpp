@@ -61,7 +61,7 @@ void Sensors::check_features() {
   std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 
   {
-    for (auto i = 0; i < SENSOR_TYPE::SENSOR_MAX; i++) {
+    for (auto i = 0; i < SENSOR_TYPE::SENSOR_MAX && !this->tmx->is_stopped; i++) {
 #ifdef TMX_TX_DEBUG
       std::cout << "Checking for sensor type " << (int)i << std::endl;
 #endif

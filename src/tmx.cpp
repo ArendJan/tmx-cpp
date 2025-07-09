@@ -779,24 +779,39 @@ void TMX::setScanDelay(uint8_t delay) {
 }
 
 void TMX::stop() {
+  if(this->is_stopped) {
+    std::cout << "TMX: already stopped" << std::endl;
+    return;
+  }
   // this->sendMessage(MESSAGE_TYPE::STOP, {});
   this->is_stopped = true;
-  if (this->ping_thread.joinable() &&
-      std::this_thread::get_id() != this->ping_thread.get_id())
-    this->ping_thread.join();
+  this->parsePool.stop();
+  this->feature_detect_thread.join();
+  // trigger all conditions to stop waiting for features
+  this->feature_cv.notify_all();
+  std::cout << "TMX: stopping" << (int)__LINE__ << std::endl;
+  std::cout << "ping thread id: " << this->ping_thread.get_id()
+            << std::endl;
+  std::thread test_thread;
+  std::cout << "test thread id:" << test_thread.get_id() << std::endl;
+  if (  this->ping_thread.joinable() &&
+      std::this_thread::get_id() != this->ping_thread.get_id()) {
+      this->ping_thread.join();
+  }
   this->stop_func = []() {};
-
+std::cout << "TMX: stopping" << (int)__LINE__ << std::endl;
   this->parsePool.stop();
   this->parsePool.join();
-
+std::cout << "TMX: stopping" << (int)__LINE__ << std::endl;
   if (!this->serial) {
     return;
   }
-
+std::cout << "TMX: stopping" << (int)__LINE__ << std::endl;
   if (this->serial->isOpen()) {
     this->sendMessage(MESSAGE_TYPE::RESET_BOARD, {});
     this->serial->close();
   }
+  std::cout << "TMX: stopping" << (int)__LINE__ << std::endl;
 }
 
 bool TMX::setI2CPins(uint8_t sda, uint8_t scl, uint8_t port) {
@@ -972,6 +987,7 @@ const std::vector<TMX::serial_port> TMX::accepted_ports = {
     {"", 0x1a86, 0x7523}, // CH340
     {"", 0x2E8A, 0x000A}, // RP2040
     {"", 0x2E8A, 0x0009}, // RP2350
+    {"", 0x2E8A, 0x00c0}, // Arduino RP pico
     {"", 0x239a, 0x802b}, // adafruit itsybitsy m4
     {"", 0x0483, 0x5740}, // stm32f103 blackpill
     {"", 0x10c4, 0xea60}, // CP2102
@@ -1095,6 +1111,7 @@ bool TMX::set_id(const TMX::serial_port &port, uint8_t id) {
 }
 
 void TMX::ping_task() {
+  std::cout << "ping task started" << std::endl;
   this->get_feature(MESSAGE_TYPE::BOOTLOADER_RESET);
   if (!this->get_feature(MESSAGE_TYPE::PING).first) {
     std::cout << "ping not supported" << std::endl;
@@ -1103,10 +1120,11 @@ void TMX::ping_task() {
   uint8_t num = 0;
   std::this_thread::sleep_for(std::chrono::milliseconds(1000));
   while (!this->is_stopped) {
+    std::cout << "send ping" << __LINE__ << std::endl;
     num++;
     this->sendPing(num);
     std::this_thread::sleep_for(std::chrono::milliseconds(400));
-    if ((num - this->last_ping) > 2) {
+    if ((num - this->last_ping) > 10) {
       std::cout << "\033[1;31mTelemetrix stopped due to missed pings | Missed: "
                 << ((int)((num - this->last_ping))) << "\033[0m" << std::endl;
       this->stop_func();
@@ -1124,7 +1142,13 @@ void TMX::ping_callback(const std::vector<uint8_t> message) {
               << std::endl;
     this->stop_func();
   }
-  this->last_ping = message[2];
+  uint8_t ping_reply = message[2];
+  if(ping_reply -1 != this->last_ping) {
+    std::cout << "Ping reply mismatch: " << (int)ping_reply << " != "
+              << (int)(this->last_ping + 1) << std::endl;
+    // this->stop_func();
+  }
+  this->last_ping = ping_reply;
 }
 
 void TMX::feature_detect_task() {
@@ -1165,7 +1189,7 @@ std::pair<bool, std::vector<uint8_t>> TMX::get_feature(MESSAGE_TYPE type) {
     TMX_DEBUG std::cout << "Waiting " << (int)type << " " << this->feature_index
                         << "... \n";
     this->feature_cv.wait(lk, [this, type] {
-      return this->feature_index >= (int)type || this->feature_detected;
+      return this->feature_index >= (int)type || this->feature_detected || this->is_stopped;
     });
     TMX_DEBUG std::cout << "done waiting " << (int)type << " "
                         << this->feature_index << std::endl;

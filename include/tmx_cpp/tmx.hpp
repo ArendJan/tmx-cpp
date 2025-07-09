@@ -152,13 +152,13 @@ public:
                            uint8_t type);
   std::pair<bool, std::vector<uint8_t>>
   get_feature(const enum MESSAGE_TYPE type);
+  bool is_stopped = false;
 
 private:                   /* Ping related elements */
   std::thread ping_thread; // TODO: jthread from c++20
   uint8_t last_ping = 0;
   uint8_t magic = 0;
   bool first_magic = true;
-  bool is_stopped = false;
 
   void ping_task();
   void ping_callback(const std::vector<uint8_t> msg);

@@ -16,7 +16,7 @@ Modules::Modules(std::shared_ptr<TMX> tmx) {
 void Modules::check_features() {
   // std::cout << "Checking for modules" << std::endl;
   {
-    for (auto i = 0; i < MODULE_TYPE::MAX; i++) {
+    for (auto i = 0; i < MODULE_TYPE::MAX && !this->tmx->is_stopped; i++) {
 #ifdef TMX_TX_DEBUG
       std::cout << "Checking for module type " << (int)i << std::endl;
 #endif
