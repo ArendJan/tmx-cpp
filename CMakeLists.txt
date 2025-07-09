@@ -1,5 +1,5 @@
 # Minimum required CMake version
-cmake_minimum_required(VERSION 3.30)
+cmake_minimum_required(VERSION 3.22)
 
 # Project name
 project(tmx_cpp)
