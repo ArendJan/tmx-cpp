@@ -25,10 +25,10 @@ public:
                  std::function<void(std::vector<uint8_t>)> callback);
   std::vector<std::pair<MODULE_TYPE, std::function<void(std::vector<uint8_t>)>>>
       modules;
-  std::shared_ptr<TMX> tmx;
+  TMX* tmx;
   std::vector<std::pair<MODULE_TYPE, std::vector<uint8_t>>> module_features;
   void report_features(MODULE_TYPE type, bool ok, std::vector<uint8_t> data);
-  Modules(std::shared_ptr<TMX> tmx);
+  Modules(TMX* tmx);
   void callback(std::vector<uint8_t> data);
 
   bool send_module(uint8_t module_num, std::vector<uint8_t> data);

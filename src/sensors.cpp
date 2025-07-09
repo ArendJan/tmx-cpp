@@ -3,11 +3,8 @@
 
 using namespace tmx_cpp;
 
-Sensors::Sensors(std::shared_ptr<TMX> tmx) {
+Sensors::Sensors(TMX* tmx):tmx(tmx) {
   using namespace std::placeholders;
-
-  this->tmx = tmx;
-  this->tmx->sensors_sys = this;
   tmx->add_callback(MESSAGE_IN_TYPE::SENSOR_REPORT,
                     std::bind(&Sensors::callback, this, _1));
 }

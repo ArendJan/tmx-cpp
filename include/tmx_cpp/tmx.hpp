@@ -79,9 +79,8 @@ public:
   void parseOne_task(const std::vector<uint8_t> &buffer);
   boost::asio::thread_pool parsePool;
   void stop();
-  Sensors *sensors_sys;
-  Modules *module_sys;
-  // std::shared_ptr<Sensors> sensor_sys;
+  std::shared_ptr<Sensors> sensors_sys;
+  std::shared_ptr<Modules> module_sys;
 public:
   TMX(std::function<void()> stop_func, std::string port = "/dev/ttyACM0",
       size_t parse_pool_size = std::thread::hardware_concurrency());

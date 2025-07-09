@@ -32,7 +32,7 @@ int main() {
         });
         std::cout << "Digital callback added for pin 10." << std::endl;
         // sleep for a while to allow callbacks to be processed
-        std::this_thread::sleep_for(std::chrono::seconds(10));
+        std::this_thread::sleep_for(std::chrono::seconds(1));
         std::cout << "Sending ping..." << std::endl;
         tmx.stop();
   return 0;

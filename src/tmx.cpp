@@ -104,7 +104,8 @@ using namespace tmx_cpp;
 }
 TMX::TMX(std::function<void()> stop_func, std::string port,
          size_t parse_pool_size)
-    : parsePool(std::max<size_t>(parse_pool_size, 1)), stop_func(stop_func) {
+    : parsePool(std::max<size_t>(parse_pool_size, 1)), stop_func(stop_func), module_sys(std::make_shared<Modules>(this)),
+      sensors_sys(std::make_shared<Sensors>(this)), is_stopped(false) {
   using namespace std::placeholders;
 
   this->serial = std::make_shared<CallbackAsyncSerial>(port, 115200);
@@ -789,36 +790,37 @@ void TMX::stop() {
   this->feature_detect_thread.join();
   // trigger all conditions to stop waiting for features
   this->feature_cv.notify_all();
-  std::cout << "TMX: stopping" << (int)__LINE__ << std::endl;
-  std::cout << "ping thread id: " << this->ping_thread.get_id()
-            << std::endl;
-  std::thread test_thread;
-  std::cout << "test thread id:" << test_thread.get_id() << std::endl;
   if (  this->ping_thread.joinable() &&
       std::this_thread::get_id() != this->ping_thread.get_id()) {
       this->ping_thread.join();
   }
   this->stop_func = []() {};
-std::cout << "TMX: stopping" << (int)__LINE__ << std::endl;
   this->parsePool.stop();
   this->parsePool.join();
-std::cout << "TMX: stopping" << (int)__LINE__ << std::endl;
   if (!this->serial) {
     return;
   }
-std::cout << "TMX: stopping" << (int)__LINE__ << std::endl;
   if (this->serial->isOpen()) {
     this->sendMessage(MESSAGE_TYPE::RESET_BOARD, {});
     this->serial->close();
   }
-  std::cout << "TMX: stopping" << (int)__LINE__ << std::endl;
 }
 
 bool TMX::setI2CPins(uint8_t sda, uint8_t scl, uint8_t port) {
   // if (sda == 0 || scl == 0 || sda == scl) {
   //   // return false;
   // }
-  static bool initialized_ports[2] = {false, false}; // 2 ports for now
+  if(sda == 0 || scl == 0) {
+    if(port !=0 || sda != 0 || scl != 0) { // either all 0
+      return false;
+    }
+  }
+  const size_t MAX_I2C = 3;
+  if(port >= MAX_I2C) {
+    std::cout << "TMX: I2C port out of range" << std::endl;
+    return false;
+  }
+  static bool initialized_ports[MAX_I2C] = {false, false, false}; // 2 ports for now
   if (initialized_ports[port]) {
     return false;
   }

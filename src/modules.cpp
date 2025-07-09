@@ -3,14 +3,11 @@
 
 using namespace tmx_cpp;
 #define TMX_TX_DEBUG
-Modules::Modules(std::shared_ptr<TMX> tmx) {
+Modules::Modules(TMX* tmx): tmx(tmx) {
   using namespace std::placeholders;
 
-  this->tmx = tmx;
-  this->tmx->module_sys = this;
   tmx->add_callback(MESSAGE_IN_TYPE::MODULE_REPORT,
                     std::bind(&Modules::callback, this, _1));
-  // this->check_features();
 }
 
 void Modules::check_features() {
