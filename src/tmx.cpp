@@ -894,6 +894,10 @@ TMX::parse_buffer_for_message(std::vector<uint8_t> &buffer,
   std::cout << "buffer size: " << buffer.size() << std::endl;
   while (buffer.size() >= wanted_len) {
     std::cout << "buffer size: " << buffer.size() << std::endl;
+    std::cout << "buffer: ";
+      for (auto i : buffer) {
+        std::cout << std::hex << (int)i << " ";
+      }
     auto len = buffer[0];
     std::cout << "len: " << (int)len << std::endl;
     if (len != wanted_len - 1) {      // different length message
