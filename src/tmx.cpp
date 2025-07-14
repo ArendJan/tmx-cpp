@@ -142,12 +142,12 @@ TMX::~TMX() { this->stop(); }
 #include <fstream>
 
 void TMX::callback(const char *data, size_t len) {
-#if 1
+#if 0
   // write to some file
   std::ofstream file("tmx_data.log", std::ios_base::app);
   file << "callback: len = " << len << " data: ";
   for (int i = 0; i < len; i++) {
-    file << std::hex << (int)data[i] << " ";
+    file << std::hex << (uint)data[i] << " ";
   }
   file << std::endl;
   file.flush();
@@ -551,9 +551,9 @@ void TMX::sendMessage(MESSAGE_TYPE type, const std::vector<uint8_t> &message) {
   std::cout << std::endl;
 
 #endif
-#if 1
+#if 0
   std::ofstream file("tmx_data.log", std::ios_base::app);
-  file << "writing: len = " << charMessage.size() << " data: ";
+  file << "writing here: len = " << charMessage.size()<< " command = " << type << " data: ";
   for (int i = 0; i < charMessage.size(); i++) {
     file << std::hex << (int)charMessage[i] << " ";
   }
@@ -1128,7 +1128,6 @@ void TMX::ping_task() {
   uint8_t num = 0;
   std::this_thread::sleep_for(std::chrono::milliseconds(1000));
   while (!this->is_stopped) {
-    std::cout << "send ping" << __LINE__ << std::endl;
     num++;
     this->sendPing(num);
     std::this_thread::sleep_for(std::chrono::milliseconds(400));
