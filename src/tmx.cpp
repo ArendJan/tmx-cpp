@@ -122,7 +122,7 @@ TMX::TMX(std::function<void()> stop_func, std::string port,
   std::this_thread::sleep_for(std::chrono::seconds(1));
   std::cout << "TMX: done waiting for serial port to be ready" << std::endl;
 // add to file
-#if 1
+#if 0
   std::ofstream file("tmx_data.log", std::ios_base::app);
   file << "TMX: opening serial port: " << port << std::endl;
   file.flush();
@@ -135,7 +135,7 @@ TMX::TMX(std::function<void()> stop_func, std::string port,
   this->add_callback(MESSAGE_IN_TYPE::PONG_REPORT,
                      std::bind(&TMX::ping_callback, this, _1));
 
-  this->feature_detect_thread = std::thread(&TMX::feature_detect_task, this);
+  feature_detect_task();
 }
 
 TMX::~TMX() { this->stop(); }
@@ -519,7 +519,7 @@ void TMX::sendMessage(const std::vector<uint8_t> &message) {
   std::vector<char> charMessage(message.begin(), message.end());
   charMessage.insert(charMessage.begin(), charMessage.size());
   serial->write(charMessage);
-#if 1
+#if 0
   std::ofstream file("tmx_data.log", std::ios_base::app);
   file << "writing: len = " << charMessage.size()
        << " command = " << (MESSAGE_TYPE)message[0] << " data: ";
@@ -1160,8 +1160,6 @@ void TMX::ping_callback(const std::vector<uint8_t> message) {
 
 void TMX::feature_detect_task() {
   this->feature_detected = false;
-
-  std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 
   for (auto i = 0; i < (int)MESSAGE_TYPE::MAX && !this->is_stopped; i++) {
     std::this_thread::sleep_for(std::chrono::milliseconds(30));
