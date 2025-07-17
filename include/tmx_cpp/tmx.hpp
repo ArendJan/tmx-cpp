@@ -84,7 +84,7 @@ public:
 
 public:
   TMX(std::function<void()> stop_func, std::string port = "/dev/ttyACM0",
-      size_t parse_pool_size = std::thread::hardware_concurrency());
+      size_t parse_pool_size = std::thread::hardware_concurrency()/2);
   ~TMX();
   enum PIN_MODES : uint8_t {
     DIGITAL_INPUT = 0,
