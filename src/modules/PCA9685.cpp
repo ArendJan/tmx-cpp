@@ -5,7 +5,8 @@
 
 using namespace tmx_cpp;
 
-PCA9685_module::PCA9685_module(uint8_t i2c_port, uint8_t address, int frequency) {
+PCA9685_module::PCA9685_module(uint8_t i2c_port, uint8_t address,
+                               int frequency) {
   this->i2c_port = i2c_port;
   this->address = address;
   this->frequency = frequency;
@@ -45,7 +46,8 @@ bool PCA9685_module::set_mircoseconds(uint8_t channel, uint16_t microseconds) {
   const auto clock = 25'000'000;
   uint8_t prescale = (int)((clock) / (4096 * frequency)) - 1;
 
-  // Calculate the pulse for PWM based on Equation 1 from the datasheet section 7.3.5
+  // Calculate the pulse for PWM based on Equation 1 from the datasheet
+  // section 7.3.5
   prescale += 1;
   pulse_length *= prescale;
   pulse_length /= clock;
@@ -57,7 +59,8 @@ bool PCA9685_module::set_mircoseconds(uint8_t channel, uint16_t microseconds) {
 
 std::vector<uint8_t> PCA9685_module::init_data() {
   // std::cout << "pca init data" << std::dec << (int)this->i2c_port << "A"
-  //           << (int)this->address << "F" << (int)(this->frequency & 0xFF) << "F"
+  //           << (int)this->address << "F" << (int)(this->frequency & 0xFF) <<
+  //           "F"
   //           << (int)(this->frequency >> 8) << std::endl;
   std::vector<uint8_t> data = {this->i2c_port, this->address};
   // data.reserve(data.size() + sizeof(uint16_t));
@@ -72,6 +75,7 @@ void PCA9685_module::data_callback(std::vector<uint8_t> data) {
   return;
 }
 
-void PCA9685_module::attach_send_module(std::function<void(std::vector<uint8_t>)> send_module) {
+void PCA9685_module::attach_send_module(
+    std::function<void(std::vector<uint8_t>)> send_module) {
   this->send_module = send_module;
 }

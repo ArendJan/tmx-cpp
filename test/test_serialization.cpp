@@ -10,7 +10,8 @@ int main() {
     uint16_t num = 0;
     do {
       auto val = tmx_cpp::encode_u16(num);
-      auto sup_val = tmx_cpp::decode_u16(std::span(val).first<sizeof(uint16_t)>());
+      auto sup_val =
+          tmx_cpp::decode_u16(std::span(val).first<sizeof(uint16_t)>());
       std::cout << "\rU16: " << num << "/" << UINT16_MAX << std::flush;
       assert(sup_val == num);
       num++;
@@ -21,7 +22,8 @@ int main() {
     uint32_t num = 0;
     do {
       auto val = tmx_cpp::encode_u32(num);
-      auto sup_val = tmx_cpp::decode_u32(std::span(val).first<sizeof(uint32_t)>());
+      auto sup_val =
+          tmx_cpp::decode_u32(std::span(val).first<sizeof(uint32_t)>());
       std::cout << "\rU32: " << num << "/" << UINT32_MAX << std::flush;
       assert(sup_val == num);
       if (num == 0)
@@ -35,7 +37,8 @@ int main() {
     uint64_t num = 0;
     do {
       auto val = tmx_cpp::encode_u64(num);
-      auto sup_val = tmx_cpp::decode_u64(std::span(val).first<sizeof(uint64_t)>());
+      auto sup_val =
+          tmx_cpp::decode_u64(std::span(val).first<sizeof(uint64_t)>());
       std::cout << "\rU64: " << num << "/" << UINT64_MAX << std::flush;
       assert(sup_val == num);
       if (num == 0)

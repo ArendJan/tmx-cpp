@@ -1,10 +1,12 @@
 # Minimum required CMake version
-cmake_minimum_required(VERSION 3.12)
+cmake_minimum_required(VERSION 3.22)
 
 # Project name
 project(tmx_cpp)
 
 # Find Boost libraries
+# set policy for findboost, not until cmake 3.30.
+# cmake_policy(SET CMP0167 NEW)
 find_package(Boost REQUIRED COMPONENTS system thread)
 
 add_subdirectory(libs/async_serial)
@@ -46,12 +48,25 @@ set_property(TARGET tmx_cpp ${PROJECT_NAME}_test_serialization PROPERTY CXX_STAN
 set_property(TARGET tmx_cpp ${PROJECT_NAME}_test_serialization APPEND PROPERTY CMAKE_CXX_FLAGS "-Wswitch-enum") # -Wall -Wextra
 # -Wpedantic -Werror")
 
+add_executable(${PROJECT_NAME}_test_module
+  test/test_module.cpp 
+   )
+set_property(TARGET ${PROJECT_NAME}_test_module PROPERTY CXX_STANDARD 20)
+
+
 if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_definitions(_LIBCPP_ENABLE_CXX20_REMOVED_TYPE_TRAITS _LIBCPP_ENABLE_CXX17_REMOVED_UNARY_BINARY_FUNCTION)
 endif()
 
 
 target_link_libraries(${PROJECT_NAME}_test_serialization tmx_cpp)
-
+target_link_libraries(${PROJECT_NAME}_test_module tmx_cpp)
 add_test(NAME test_serialization
     COMMAND ${PROJECT_NAME}_test_serialization)
+
+# set_target_properties(${PROJECT_NAME}_test_serialization PROPERTIES
+#     EXCLUDE_FROM_ALL TRUE
+# )
+# set_target_properties(${PROJECT_NAME}_test_module PROPERTIES
+#     EXCLUDE_FROM_ALL TRUE
+# )

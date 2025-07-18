@@ -268,8 +268,8 @@ public:
   AsyncSerialImpl() : backgroundThread(), open(false), error(false) {}
 
   std::thread backgroundThread;  ///< Thread that runs read operations
-  bool open;                       ///< True if port open
-  bool error;                      ///< Error flag
+  bool open;                     ///< True if port open
+  bool error;                    ///< Error flag
   mutable std::mutex errorMutex; ///< Mutex for access to error
 
   int fd; ///< File descriptor for serial port

@@ -46,12 +46,15 @@ public:
     uint16_t time;
   };
   HiwonderServo_module(
-      uint8_t uart_port, uint8_t rx_pin, uint8_t tx_pin, std::vector<uint8_t> servo_ids,
-      std::function<void(std::vector<std::tuple<uint8_t, Servo_pos>>)> position_cb);
+      uint8_t uart_port, uint8_t rx_pin, uint8_t tx_pin,
+      std::vector<uint8_t> servo_ids,
+      std::function<void(std::vector<std::tuple<uint8_t, Servo_pos>>)>
+          position_cb);
 
   std::optional<uint8_t> register_servo_id(uint8_t servo_id);
 
-  void data_callback(std::vector<uint8_t> data); // when receiving data from the servos back
+  void data_callback(
+      std::vector<uint8_t> data); // when receiving data from the servos back
 
   bool set_single_servo(uint8_t servo_id, uint16_t angle, uint16_t time = 100);
   bool set_multiple_servos(std::vector<std::pair<uint8_t, uint16_t>> servo_vals,
@@ -70,7 +73,8 @@ public:
 
   std::vector<uint8_t> init_data();
   std::function<void(std::vector<std::tuple<uint8_t, Servo_pos>>)> position_cb;
-  void attach_send_module(std::function<void(std::vector<uint8_t>)> send_module);
+  void
+  attach_send_module(std::function<void(std::vector<uint8_t>)> send_module);
 
 private:
   uint8_t uart_port;
@@ -79,7 +83,9 @@ private:
 
   // std::optional<std::promise<void>> position_promise;
   std::optional<std::promise<std::tuple<uint8_t, bool>>> verify_id_promise;
-  std::optional<std::promise<std::tuple<uint8_t, std::tuple<uint16_t, uint16_t>>>> range_promise;
+  std::optional<
+      std::promise<std::tuple<uint8_t, std::tuple<uint16_t, uint16_t>>>>
+      range_promise;
   std::optional<std::promise<std::tuple<uint8_t, int16_t>>> offset_promise;
   std::optional<std::promise<std::tuple<uint8_t, uint8_t>>> add_servo_promise;
 };

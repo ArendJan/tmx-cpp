@@ -1,5 +1,6 @@
 #pragma once
 #include <cstdint>
+#include <iostream>
 
 namespace tmx_cpp {
 
@@ -62,12 +63,17 @@ enum struct MESSAGE_IN_TYPE : uint8_t {
   ENCODER_REPORT = 14,
   DEBUG_PRINT = 99,
   SENSOR_REPORT = 20,
+  SENSOR_MAIN_REPORT = 21, // data from the sensor system
   PONG_REPORT = 32,
   MODULE_MAIN_REPORT = 33, // data from the module system
-  MODULE_REPORT = 34, // data from a module
+  MODULE_REPORT = 34,      // data from a module
   GET_ID_REPORT = (uint8_t)MESSAGE_TYPE::GET_ID,
   SET_ID_REPORT = (uint8_t)MESSAGE_TYPE::SET_ID,
   FEATURE_REQUEST_REPORT = (uint8_t)MESSAGE_TYPE::FEATURE_REQUEST,
 };
 
 } // namespace tmx_cpp
+std::ostream &operator<<(std::ostream &out,
+                         const tmx_cpp::MESSAGE_IN_TYPE &value);
+
+std::ostream &operator<<(std::ostream &out, const tmx_cpp::MESSAGE_TYPE &value);
