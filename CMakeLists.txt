@@ -61,8 +61,8 @@ endif()
 
 target_link_libraries(${PROJECT_NAME}_test_serialization tmx_cpp)
 target_link_libraries(${PROJECT_NAME}_test_module tmx_cpp)
-add_test(NAME test_serialization
-    COMMAND ${PROJECT_NAME}_test_serialization)
+# add_test(NAME test_serialization # This test isn't built by default, will fail colcon test
+#     COMMAND ${PROJECT_NAME}_test_serialization)
 
 # set_target_properties(${PROJECT_NAME}_test_serialization PROPERTIES
 #     EXCLUDE_FROM_ALL TRUE

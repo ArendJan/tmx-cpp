@@ -12,7 +12,7 @@ void BoardFeatures::parse_features(std::vector<uint8_t> data) {
   }
   //   msg: type, ok, data
   auto type = (MESSAGE_TYPE)data[0];
-  auto ok = data[1];
+  // auto ok = data[1]; // stored somewhere else.
 
   switch (type) {
   case MESSAGE_TYPE::SERVO_ATTACH:
