@@ -31,6 +31,7 @@ add_library(tmx_cpp
   src/sensors/INA226.cpp
   src/sensors/MPU9250.cpp
   src/sensors/VEML6040.cpp
+  src/sensors/AS5600.cpp
 )
 
 # Link Boost libraries

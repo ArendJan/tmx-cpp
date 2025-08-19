@@ -9,6 +9,8 @@ enum SENSOR_TYPE : uint8_t {
   VEML6040 = 0x04, // TODO: Not implemented
   ADXL345 = 0x05,  // // TODO:  Not implemented
   INA226 = 0x06,
+  // HMC5883 = 0x07, // TODO: Not implemented
+  AS5600 = 0x08,
   SENSOR_MAX
 };
 
