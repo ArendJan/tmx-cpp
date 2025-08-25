@@ -998,7 +998,7 @@ const std::vector<TMX::serial_port> TMX::accepted_ports = {
     {"", 0x2E8A, 0x00c0}, // Arduino RP pico
     {"", 0x239a, 0x802b}, // adafruit itsybitsy m4
     {"", 0x0483, 0x5740}, // stm32f103 blackpill
-    {"", 0x10c4, 0xea60}, // CP2102
+    // {"", 0x10c4, 0xea60}, // CP2102, dont use, its used by the lidar!!!
     // following ones are hallucinated by copilot, maybe check
     {"", 0x0403, 0x6001}, // FTDI FT232R
     {"", 0x0403, 0x6015}, // FTDI FT231X
