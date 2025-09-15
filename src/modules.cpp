@@ -27,7 +27,7 @@ void Modules::report_features(MODULE_TYPE type, bool ok,
                               std::vector<uint8_t> data) {
   std::cout << "report_features: " << (int)type << " ok: " << (int)ok
             << std::endl;
-  if (type >= MODULE_TYPE::MAX) {
+  if (type >= MODULE_TYPE:   :MAX) {
     std::cout << "Module type out of range" << std::endl;
     return;
   }
