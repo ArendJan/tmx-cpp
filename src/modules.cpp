@@ -18,7 +18,7 @@ void Modules::check_features() {
       std::cout << "Checking for module type " << (int)i << std::endl;
 #endif
       tmx->sendMessage(MESSAGE_TYPE::MODULE_NEW, {0, (uint8_t)i});
-      std::this_thread::sleep_for(std::chrono::milliseconds(50));
+      std::this_thread::sleep_for(std::chrono::milliseconds(1000 ));
     }
   }
 }
