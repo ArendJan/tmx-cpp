@@ -738,7 +738,7 @@ bool TMX::attach_sonar(uint8_t trigger, uint8_t echo,
     std::cout << "Sonar at max capacity" << std::endl;
     return false;
   }
-  this->sonar_callbacks_pin.push_back({trigger, callback});
+  this->sonar_callbacks_pin.push_back({echo, callback});
   this->sendMessage(MESSAGE_TYPE::SONAR_NEW, {trigger, echo});
   return true;
 }
