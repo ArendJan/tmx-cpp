@@ -14,5 +14,5 @@ jobs:
         # exclude: './third_party ./external'
         exclude: './libs'
         extensions: 'h,hpp,c,cpp'
-        clangFormatVersion: 14
+        clangFormatVersion: 18
         style: llvm
