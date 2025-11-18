@@ -349,15 +349,22 @@ void TMX::parseOne_task(const std::vector<uint8_t> &message) {
     }
   } break;
   case MESSAGE_IN_TYPE::SONAR_DISTANCE: {
-    auto pin = message[2];
-
+    auto trigger_pin = message[2];
+    auto echo_pin = -1;
+    // auto dist_offset = 4;
+    auto value = decode_u16(std::span(message).subspan<3, sizeof(uint16_t)>());
+    if (message.size() == 5) {
+      echo_pin = message[3];
+      value = decode_u16(std::span(message).subspan<4, sizeof(uint16_t)>());
+    }
     // The distance value in centimeters, a left over from the original
     // Telemetrix protocol.
-    auto value = decode_u16(std::span(message).subspan<3, sizeof(uint16_t)>());
 
     for (const auto &callback : this->sonar_callbacks_pin) {
-      if (callback.first == pin) {
-        callback.second(pin, value);
+      if (callback.first.first == trigger_pin) {
+        if (echo_pin == -1 || callback.first.second == echo_pin) {
+          callback.second({trigger_pin, echo_pin}, value);
+        }
       }
     }
     for (const auto &callback : this->sonar_distance_callbacks) {
@@ -723,7 +730,7 @@ bool TMX::attach_encoder(uint8_t pin_A, uint8_t pin_B,
 }
 
 bool TMX::attach_sonar(uint8_t trigger, uint8_t echo,
-                       std::function<void(uint8_t, uint16_t)> callback) {
+                       sonar_callback_func_pin16 callback) {
 
   auto feature = this->get_feature(MESSAGE_TYPE::SONAR_NEW);
   if (!feature.first) {
@@ -738,7 +745,7 @@ bool TMX::attach_sonar(uint8_t trigger, uint8_t echo,
     std::cout << "Sonar at max capacity" << std::endl;
     return false;
   }
-  this->sonar_callbacks_pin.push_back({echo, callback});
+  this->sonar_callbacks_pin.push_back({{trigger, echo}, callback});
   this->sendMessage(MESSAGE_TYPE::SONAR_NEW, {trigger, echo});
   return true;
 }

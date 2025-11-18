@@ -137,4 +137,4 @@ bool Modules::send_module(uint8_t module_num, std::vector<uint8_t> data) {
   return true;
 }
 
-void empty_callback(std::vector<uint8_t> data){};
+void empty_callback(std::vector<uint8_t> data) {};
