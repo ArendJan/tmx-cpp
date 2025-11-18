@@ -36,6 +36,8 @@ using callback_opt_time_vec =
 
 using callback_func_pin = std::function<void(uint8_t, uint8_t)>;
 using callback_func_pin16 = std::function<void(uint8_t, uint16_t)>;
+using sonar_callback_func_pin16 = std::function<void(
+    std::pair<uint8_t, uint8_t>, uint16_t)>; // trigger, echo -> distance
 using callback_func_pin_int = std::function<void(uint8_t, int8_t)>;
 
 class TMX {
@@ -65,7 +67,8 @@ public:
   std::vector<std::pair<uint8_t, callback_func_pin16>> analog_callbacks_pin;
   std::vector<std::pair<uint8_t, callback_func_pin_int>>
       encoder_callbacks_pin; // todo check types
-  std::vector<std::pair<uint8_t, callback_func_pin16>> sonar_callbacks_pin;
+  std::vector<std::pair<std::pair<uint8_t, uint8_t>, sonar_callback_func_pin16>>
+      sonar_callbacks_pin; // trigger,echo -> callback
   std::vector<std::pair<uint8_t, std::vector<uint8_t>>> features;
   void add_callback(MESSAGE_IN_TYPE type,
                     std::function<void(const std::vector<uint8_t> &)> callback);
@@ -110,7 +113,7 @@ public:
   /// The sonar callback and return value is in centimeters, as specified by the
   /// original telemetrix protocol.
   bool attach_sonar(uint8_t trigger, uint8_t echo,
-                    std::function<void(uint8_t, uint16_t)> callback);
+                    sonar_callback_func_pin16 callback);
 
   // TODO: Maybe add angle remapping
   void attach_servo(uint8_t pin, uint16_t min_pulse = 1000,
