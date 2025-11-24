@@ -353,7 +353,7 @@ void TMX::parseOne_task(const std::vector<uint8_t> &message) {
     auto echo_pin = -1;
     // auto dist_offset = 4;
     auto value = decode_u16(std::span(message).subspan<3, sizeof(uint16_t)>());
-    if (message.size() == 5) {
+    if (message.size() == 6) {
       echo_pin = message[3];
       value = decode_u16(std::span(message).subspan<4, sizeof(uint16_t)>());
     }
