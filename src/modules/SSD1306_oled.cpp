@@ -59,6 +59,8 @@ void SSD1306_module::data_callback(std::vector<uint8_t> data) {
 
 bool SSD1306_module::send_text(std::string text,
                                std::chrono::milliseconds timeout) {
+
+  text_promise = std::promise<std::vector<uint8_t>>();
   auto future_response = text_promise.get_future();
 
   // Truncate to char the character limit.
@@ -109,8 +111,7 @@ bool SSD1306_module::send_text(std::string text,
 bool SSD1306_module::send_image(uint8_t width, uint8_t height,
                                 uint8_t img_buffer[],
                                 std::chrono::milliseconds timeout) {
-  // TODO: Timeout
-
+  binary_promise = std::promise<std::vector<uint8_t>>();
   if (width != width_ || height != height_) {
     std::cerr << "Image must be same dimensions as display (" << width_ << "x"
               << height_ << ")" << std::endl;

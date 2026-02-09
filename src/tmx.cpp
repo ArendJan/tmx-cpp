@@ -112,8 +112,8 @@ TMX::TMX(std::function<void()> stop_func, std::string port,
   this->serial = std::make_shared<CallbackAsyncSerial>(port, 115200);
   // sleep for a second
   this->serial->setCallback([](const char *data, size_t len) {
-    std::cout << "TMX::callback: " << len << " bytes received, ignoring"
-              << std::endl;
+    // std::cout << "TMX::callback: " << len << " bytes received, ignoring"
+    // << std::endl;
     // std::cout << "TMX::callback: " << len << " bytes received" << std::endl;
   });
   std::cout << "TMX: waiting for serial port to be ready" << std::endl;
