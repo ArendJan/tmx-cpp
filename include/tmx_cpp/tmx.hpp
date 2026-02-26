@@ -128,13 +128,13 @@ public:
                        std::tuple<uint8_t, uint8_t, uint8_t> color);
   bool set_neopixel_color(uint8_t pixel_num,
                           std::tuple<uint8_t, uint8_t, uint8_t> color,
-                          bool autoshow);
+                          bool autoshow = true);
   bool set_neopixel_color(
       std::vector<std::pair<uint8_t, std::tuple<uint8_t, uint8_t, uint8_t>>>
           pixel_colors,
-      bool autoshow);
+      bool autoshow = true);
   bool fill_neopixels(std::tuple<uint8_t, uint8_t, uint8_t> color,
-                      bool autoshow);
+                      bool autoshow = true);
   bool clear_neopixels();
   bool show_neopixels();
 
