@@ -122,6 +122,29 @@ public:
   void detach_servo(uint8_t pin);
 
   void setScanDelay(uint8_t delay);
+
+  // neopixel
+  bool attach_neopixel(uint8_t pin, uint8_t num_pixels, uint8_t type,
+                       std::tuple<uint8_t, uint8_t, uint8_t> color);
+  bool set_neopixel_color(uint8_t pixel_num,
+                          std::tuple<uint8_t, uint8_t, uint8_t> color,
+                          bool autoshow);
+  bool set_neopixel_color(
+      std::vector<std::pair<uint8_t, std::tuple<uint8_t, uint8_t, uint8_t>>>
+          pixel_colors,
+      bool autoshow);
+  bool fill_neopixels(std::tuple<uint8_t, uint8_t, uint8_t> color,
+                      bool autoshow);
+  bool clear_neopixels();
+  bool show_neopixels();
+
+private:
+  uint8_t neopixel_len = 0;
+  uint8_t neopixel_pin = 0;
+  bool neopixel_attached = false;
+
+  // i2c
+public:
   bool setI2CPins(uint8_t sda, uint8_t scl, uint8_t port);
   bool i2cWrite(uint8_t port, uint8_t address, std::vector<uint8_t> data,
                 std::function<void(bool, std::vector<uint8_t>)> callback,
