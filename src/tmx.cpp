@@ -1157,7 +1157,7 @@ void TMX::ping_callback(const std::vector<uint8_t> message) {
     this->stop_func();
   }
   uint8_t ping_reply = message[2];
-  if (ping_reply - 1 != this->last_ping) {
+  if (ping_reply != ((this->last_ping+1)%0x100)) {
     std::cout << "Ping reply mismatch: " << (int)ping_reply
               << " != " << (int)(this->last_ping + 1) << std::endl;
     // this->stop_func();
