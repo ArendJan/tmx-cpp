@@ -26,6 +26,7 @@ add_library(tmx_cpp
   src/modules/HiwonderServo.cpp
   src/modules/PCA9685.cpp
   src/modules/SSD1306_oled.cpp
+  src/modules/Shutdown_relay.cpp
   src/sensors.cpp
   src/sensors/ADXL345.cpp
   src/sensors/INA226.cpp
