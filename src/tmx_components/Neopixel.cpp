@@ -20,7 +20,8 @@ bool TMX::attach_neopixel(uint8_t pin, uint8_t num_pixels, uint8_t type,
     std::cout << "num_pixels out of range (1-255)" << std::endl;
     return false;
   }
-  auto message = std::vector<uint8_t>{pin, num_pixels}; // type not yet added to msg
+  auto message =
+      std::vector<uint8_t>{pin, num_pixels}; // type not yet added to msg
   auto [r, g, b] = color;
   auto l = {r, g, b};
   if (std::any_of(l.begin(), l.end(), [](uint8_t c) { return c > 255; })) {

@@ -177,7 +177,9 @@ public:
   parse_buffer_for_message(std::vector<uint8_t> &buffer, uint8_t len,
                            uint8_t type);
   std::pair<bool, std::vector<uint8_t>>
-  get_feature(const enum MESSAGE_TYPE type);
+  get_feature(const enum MESSAGE_TYPE type,
+              std::chrono::duration<double, std::milli> timeout =
+                  std::chrono::milliseconds(50000));
   bool is_stopped = false;
 
 private:                   /* Ping related elements */
