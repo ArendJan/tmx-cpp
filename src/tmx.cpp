@@ -617,6 +617,23 @@ void TMX::pwmWrite(uint8_t pin, uint16_t value) {
   append_range(message, encode_u16(value));
   this->sendMessage(MESSAGE_TYPE::PWM_WRITE, message);
 }
+void TMX::pwmWrite(std::vector<std::pair<uint8_t, uint16_t>> pin_values) {
+  auto feature = this->get_feature(MESSAGE_TYPE::PWM_WRITE);
+  if (!feature.first || feature.second.size() < 1 || feature.second[0] == 0) {
+    // apparently this hw doesnt support streamlined pwm write
+    // this might overload the usb connection...
+    for (auto const &pin : pin_values) {
+      this->pwmWrite(pin.first, pin.second);
+    }
+    return;
+  }
+  std::vector<uint8_t> message;
+  for (const auto &pv : pin_values) {
+    message.push_back(pv.first);
+    append_range(message, encode_u16(pv.second));
+  }
+  this->sendMessage(MESSAGE_TYPE::PWM_WRITE, message);
+}
 void TMX::add_callback(
     MESSAGE_IN_TYPE type,
     std::function<void(const std::vector<uint8_t> &)> callback) {
