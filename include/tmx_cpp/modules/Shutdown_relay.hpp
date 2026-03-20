@@ -19,7 +19,7 @@ public:
   virtual void data_callback(std::vector<uint8_t> data) override;
   void send_shutdown_signal(bool enable) {
     if (this->send_module) {
-      this->send_module({enable ? 1 : 0});
+      this->send_module({enable ? (uint8_t)1 : (uint8_t)0});
     } else {
       std::cerr << "Error: send_module function is not set for shutdown relay "
                    "module, cannot send shutdown signal."

@@ -41,5 +41,6 @@ void Shutdown_relay_module::attach_send_module(
 }
 
 std::vector<uint8_t> Shutdown_relay_module::init_data() {
-  return {this->pin, this->turn_off_value ? 1 : 0, this->turn_off_time_sec};
+  return {this->pin, static_cast<unsigned char>(this->turn_off_value ? 1 : 0),
+          this->turn_off_time_sec};
 }

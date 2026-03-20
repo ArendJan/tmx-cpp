@@ -14,7 +14,9 @@ jobs:
           # - windows-latest
         compiler:
           - llvm-18
-          # - gcc-13 # something wrong with boost and gcc-13
+          - llvm-20
+          # - gcc-15
+          # - gcc-13 # something wrong with boost and gcc-*
           # - msvc
           # you can specify the version after `-` like `llvm-13.0.0`.
     steps:
