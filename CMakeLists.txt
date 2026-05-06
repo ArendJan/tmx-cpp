@@ -27,6 +27,7 @@ add_library(tmx_cpp
   src/modules/PCA9685.cpp
   src/modules/SSD1306_oled.cpp
   src/modules/Shutdown_relay.cpp
+  src/sensors/MPU6050.cpp
   src/sensors.cpp
   src/sensors/ADXL345.cpp
   src/sensors/INA226.cpp

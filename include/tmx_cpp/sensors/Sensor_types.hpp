@@ -11,6 +11,8 @@ enum SENSOR_TYPE : uint8_t {
   INA226 = 0x06,
   // HMC5883 = 0x07, // TODO: Not implemented
   AS5600 = 0x08,
+
+  MPU6050_t = 9,
   SENSOR_MAX
 };
 
