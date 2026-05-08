@@ -34,6 +34,7 @@ add_library(tmx_cpp
   src/sensors/MPU9250.cpp
   src/sensors/VEML6040.cpp
   src/sensors/AS5600.cpp
+  src/sensors/BNO055.cpp
   src/tmx_components/Neopixel.cpp
 )
 

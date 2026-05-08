@@ -13,6 +13,7 @@ enum SENSOR_TYPE : uint8_t {
   AS5600 = 0x08,
 
   MPU6050_t = 9,
+  BNO055_t = 10,
   SENSOR_MAX
 };
 
