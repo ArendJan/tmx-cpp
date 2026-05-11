@@ -70,6 +70,11 @@ std::vector<uint8_t> PCA9685_module::init_data() {
   return data;
 }
 
+uint16_t PCA9685_module::get_high() {
+  return (uint16_t)4096; // The PCA9685 has 12-bit resolution, so the maximum
+                         // high value is 4096 (2^12).
+}
+
 void PCA9685_module::data_callback(std::vector<uint8_t> data) {
   // it should not receive any data
   return;
