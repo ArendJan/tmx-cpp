@@ -108,7 +108,7 @@ TMX::TMX(std::function<void()> stop_func, std::string port,
       module_sys(std::make_shared<Modules>(this)),
       sensors_sys(std::make_shared<Sensors>(this)), is_stopped(false) {
   using namespace std::placeholders;
-
+  std::cout << "TMX version " << GIT_SHA1_TMX << std::endl;
   this->serial = std::make_shared<CallbackAsyncSerial>(port, 115200);
   // sleep for a second
   this->serial->setCallback([](const char *data, size_t len) {

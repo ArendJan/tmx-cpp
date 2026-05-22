@@ -15,6 +15,14 @@ add_subdirectory(libs/async_serial)
 # aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/libs/async_serial/ SUB_SOURCES)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/libs/async_serial/include/
                     ${CMAKE_CURRENT_SOURCE_DIR}/include/)
+find_package (Git)
+execute_process(COMMAND
+  "${GIT_EXECUTABLE}" describe --match=NeVeRmAtCh --always --abbrev=40 --dirty
+  WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+  OUTPUT_VARIABLE GIT_SHA1_TMX
+  ERROR_QUIET OUTPUT_STRIP_TRAILING_WHITESPACE)
+message("SHA1 tmx_cpp:" ${GIT_SHA1_TMX})
+add_compile_definitions(GIT_SHA1_TMX="${GIT_SHA1_TMX}")
 
 add_library(tmx_cpp
   STATIC
