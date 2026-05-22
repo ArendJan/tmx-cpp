@@ -108,7 +108,7 @@ TMX::TMX(std::function<void()> stop_func, std::string port,
       module_sys(std::make_shared<Modules>(this)),
       sensors_sys(std::make_shared<Sensors>(this)), is_stopped(false) {
   using namespace std::placeholders;
-
+  std::cout << "TMX version " << GIT_SHA1_TMX << std::endl;
   this->serial = std::make_shared<CallbackAsyncSerial>(port, 115200);
   // sleep for a second
   this->serial->setCallback([](const char *data, size_t len) {
@@ -615,6 +615,23 @@ void TMX::digitalWrite(uint8_t pin, bool value) {
 void TMX::pwmWrite(uint8_t pin, uint16_t value) {
   std::vector<uint8_t> message = {pin};
   append_range(message, encode_u16(value));
+  this->sendMessage(MESSAGE_TYPE::PWM_WRITE, message);
+}
+void TMX::pwmWrite(std::vector<std::pair<uint8_t, uint16_t>> pin_values) {
+  auto feature = this->get_feature(MESSAGE_TYPE::PWM_WRITE);
+  if (!feature.first || feature.second.size() < 1 || feature.second[0] == 0) {
+    // apparently this hw doesnt support streamlined pwm write
+    // this might overload the usb connection...
+    for (auto const &pin : pin_values) {
+      this->pwmWrite(pin.first, pin.second);
+    }
+    return;
+  }
+  std::vector<uint8_t> message;
+  for (const auto &pv : pin_values) {
+    message.push_back(pv.first);
+    append_range(message, encode_u16(pv.second));
+  }
   this->sendMessage(MESSAGE_TYPE::PWM_WRITE, message);
 }
 void TMX::add_callback(
@@ -1127,7 +1144,15 @@ bool TMX::set_id(const TMX::serial_port &port, uint8_t id) {
 
 void TMX::ping_task() {
   std::cout << "ping task started" << std::endl;
-  this->get_feature(MESSAGE_TYPE::BOOTLOADER_RESET);
+  if (!this->get_feature(MESSAGE_TYPE::SET_PIN_MODE,
+                         std::chrono::milliseconds(1000))
+           .first) {
+    std::cout << "get_feature probably stuck, so shutdown!" << std::endl;
+    this->is_stopped = true;
+    this->stop_func();
+    return;
+  }
+  std::cout << "got feature ping task!" << std::endl;
   if (!this->get_feature(MESSAGE_TYPE::PING).first) {
     std::cout << "ping not supported" << std::endl;
     return;
@@ -1167,7 +1192,6 @@ void TMX::ping_callback(const std::vector<uint8_t> message) {
 
 void TMX::feature_detect_task() {
   this->feature_detected = false;
-
   for (auto i = 0; i < (int)MESSAGE_TYPE::MAX && !this->is_stopped; i++) {
     std::this_thread::sleep_for(std::chrono::milliseconds(30));
     this->sendMessage(MESSAGE_TYPE::FEATURE_REQUEST, {(uint8_t)i});
@@ -1195,15 +1219,22 @@ void TMX::feature_detect_task() {
   this->sensors_sys->check_features();
 }
 
-std::pair<bool, std::vector<uint8_t>> TMX::get_feature(MESSAGE_TYPE type) {
+std::pair<bool, std::vector<uint8_t>>
+TMX::get_feature(MESSAGE_TYPE type,
+                 std::chrono::duration<double, std::milli> timeout) {
   if (!this->feature_detected && this->feature_index < (int)type) {
     std::unique_lock<std::mutex> lk(this->feature_mutex);
     TMX_DEBUG std::cout << "Waiting " << (int)type << " " << this->feature_index
                         << "... \n";
-    this->feature_cv.wait(lk, [this, type] {
+    auto result = this->feature_cv.wait_for(lk, timeout, [this, type] {
       return this->feature_index >= (int)type || this->feature_detected ||
              this->is_stopped;
     });
+    if (!result) {
+      std::cout << "Timeout while waiting for feature: " << (int)type
+                << std::endl;
+      return {false, {}};
+    }
     TMX_DEBUG std::cout << "done waiting " << (int)type << " "
                         << this->feature_index << std::endl;
   }

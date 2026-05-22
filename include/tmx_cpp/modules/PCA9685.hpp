@@ -24,6 +24,7 @@ public:
   void data_callback(std::vector<uint8_t> data);
   void
   attach_send_module(std::function<void(std::vector<uint8_t>)> send_module);
+  uint16_t get_high();
 
 private:
   uint8_t i2c_port;

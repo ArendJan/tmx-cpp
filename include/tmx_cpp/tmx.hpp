@@ -106,7 +106,7 @@ public:
                   uint16_t analog_differential = 0);
   void digitalWrite(uint8_t pin, bool value);
   void pwmWrite(uint8_t pin, uint16_t value);
-
+  void pwmWrite(std::vector<std::pair<uint8_t, uint16_t>> pin_values);
   bool attach_encoder(uint8_t pin_A, uint8_t pin_B,
                       callback_func_pin_int callback);
 
@@ -177,7 +177,9 @@ public:
   parse_buffer_for_message(std::vector<uint8_t> &buffer, uint8_t len,
                            uint8_t type);
   std::pair<bool, std::vector<uint8_t>>
-  get_feature(const enum MESSAGE_TYPE type);
+  get_feature(const enum MESSAGE_TYPE type,
+              std::chrono::duration<double, std::milli> timeout =
+                  std::chrono::milliseconds(50000));
   bool is_stopped = false;
 
 private:                   /* Ping related elements */
