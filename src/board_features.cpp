@@ -20,7 +20,14 @@ void BoardFeatures::parse_features(std::vector<uint8_t> data) {
     break;
   case MESSAGE_TYPE::ENCODER_NEW:
     this->max_encoders = data[2];
-    this->encoder_dirs = data[3];
+    if(data.size() >= 3)
+    {
+      this->encoder_dirs = data[3];
+    }
+    if(data.size() >= 4){
+      this->encoder_pulls = data[4];
+    }
+
     break;
   case MESSAGE_TYPE::SONAR_NEW:
     this->max_sonar = data[2];

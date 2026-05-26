@@ -18,6 +18,7 @@ class BoardFeatures {
 public:
   int max_encoders = 0;
   int encoder_dirs = 0;
+  int encoder_pulls = 0; // true if allowing pull ups/downs on encoders
   int max_servos = 0;
   int max_sonar = 0;
 

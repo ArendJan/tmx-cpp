@@ -715,7 +715,7 @@ void TMX::add_analog_callback(uint8_t pin,
 }
 
 bool TMX::attach_encoder(uint8_t pin_A, uint8_t pin_B,
-                         std::function<void(uint8_t, int8_t)> callback) {
+                         std::function<void(uint8_t, int8_t)> callback, bool pullup, bool pulldown) {
   auto feature = this->get_feature(MESSAGE_TYPE::ENCODER_NEW);
   if (!feature.first) {
     std::cout << "encoders not supported by hw" << std::endl;
@@ -742,7 +742,23 @@ bool TMX::attach_encoder(uint8_t pin_A, uint8_t pin_B,
               << std::endl;
     type = 1;
   }
-  this->sendMessage(MESSAGE_TYPE::ENCODER_NEW, {type, pin_A, pin_B});
+  std::vector<uint8_t> data = {type, pin_A, pin_B};
+  if(this->board_features.encoder_pulls == 0) {
+    // no pull up or pull down supported, do nothing
+    if(pullup || pulldown) {
+      std::cout << "hardware does not support pull up or pull down on encoders, ignoring" << std::endl;
+    }
+  } else if(pullup) {
+    data.push_back(1);
+  } else if(pulldown) {
+    data.push_back(2);
+  } else {
+    data.push_back(0);
+  }
+  if( pullup && pulldown ) {
+    std::cout << "unable to have pullup and pull-down, only up is enabled." << std::endl;
+  }
+  this->sendMessage(MESSAGE_TYPE::ENCODER_NEW, data);
   return true;
 }
 

@@ -108,7 +108,7 @@ public:
   void pwmWrite(uint8_t pin, uint16_t value);
   void pwmWrite(std::vector<std::pair<uint8_t, uint16_t>> pin_values);
   bool attach_encoder(uint8_t pin_A, uint8_t pin_B,
-                      callback_func_pin_int callback);
+                      callback_func_pin_int callback, bool pullup = false, bool pulldown = false);
 
   /// The sonar callback and return value is in centimeters, as specified by the
   /// original telemetrix protocol.
