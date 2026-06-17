@@ -812,7 +812,9 @@ void TMX::stop() {
   // this->sendMessage(MESSAGE_TYPE::STOP, {});
   this->is_stopped = true;
   this->parsePool.stop();
-  this->feature_detect_thread.join();
+  if (this->feature_detect_thread.joinable()) {
+    this->feature_detect_thread.join();
+  }
   // trigger all conditions to stop waiting for features
   this->feature_cv.notify_all();
   if (this->ping_thread.joinable() &&
@@ -827,7 +829,11 @@ void TMX::stop() {
   }
   if (this->serial->isOpen()) {
     this->sendMessage(MESSAGE_TYPE::RESET_BOARD, {});
-    this->serial->close();
+    try {
+      this->serial->close();
+    } catch (const std::exception &e) {
+      std::cout << "Error closing serial port: " << e.what() << std::endl;
+    }
   }
 }
 
@@ -1163,9 +1169,15 @@ void TMX::ping_task() {
     num++;
     this->sendPing(num);
     std::this_thread::sleep_for(std::chrono::milliseconds(400));
-    if ((num - this->last_ping) > 10) {
+    uint8_t diff = num - this->last_ping;
+    if (diff > 10) {
       std::cout << "\033[1;31mTelemetrix stopped due to missed pings | Missed: "
-                << ((int)((num - this->last_ping))) << "\033[0m" << std::endl;
+                << ((int)diff) << "\033[0m" << std::endl;
+      if (diff > 20) {
+        // sometimes the stop_func doesnt work, so throw an exception to stop
+        // the program
+        throw std::runtime_error("Telemetrix stopped due to missed pings");
+      }
       this->stop_func();
     }
   }

@@ -65,7 +65,7 @@ void Sensors::check_features() {
 #endif
       tmx->sendMessage(MESSAGE_TYPE::SENSOR_NEW, {0, (uint8_t)i});
       // std::cout << " sleeping for sensor type " << (int)i << std::endl;
-      std::this_thread::sleep_for(std::chrono::milliseconds(200));
+      std::this_thread::sleep_for(std::chrono::milliseconds(30));
       // std::cout << "done sleeping for sensor type " << (int)i << std::endl;
     }
   }
