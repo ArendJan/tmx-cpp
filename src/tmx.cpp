@@ -407,7 +407,7 @@ void TMX::parseOne_task(const std::vector<uint8_t> &message) {
     //   std::cout << "debug " << i << ":" << std::dec << (uint)message[i] <<
     //   std::endl;
     // }
-    }
+    // }
     break;
   case MESSAGE_IN_TYPE::DHT_REPORT: {
     for (const auto &callback : this->dht_callbacks) {
@@ -534,7 +534,14 @@ void TMX::sendPing(uint8_t num) {
 void TMX::sendMessage(const std::vector<uint8_t> &message) {
   std::vector<char> charMessage(message.begin(), message.end());
   charMessage.insert(charMessage.begin(), charMessage.size());
-  serial->write(charMessage);
+  // serial write sometimes hangs when pico is restarted, use future and async to avoid this
+  std::future<bool> future = std::async(std::launch::async, [this, charMessage]() {
+    serial->write(charMessage);
+    return true;
+  });
+  if(future.wait_for(std::chrono::seconds(1)) == std::future_status::timeout) {
+    std::cerr << "Serial write timed out" << std::endl;
+  }
 #if 0
   std::ofstream file("tmx_data.log", std::ios_base::app);
   file << "writing: len = " << charMessage.size()
@@ -555,10 +562,10 @@ void TMX::sendMessage(MESSAGE_TYPE type, const std::vector<uint8_t> &message) {
     std::cout << "Feature not supported: " << type << std::endl;
     return;
   }
-  std::vector<char> charMessage(message.begin(), message.end());
+  std::vector<uint8_t> charMessage(message.begin(), message.end());
   charMessage.insert(charMessage.begin(),
-                     {(char)(charMessage.size() + 1), (char)type});
-
+                     {(uint8_t)type});
+  this->sendMessage(charMessage);
 #ifdef TMX_TX_DEBUG
   std::cout << "T charMessage = ";
   for (auto i : charMessage) {
@@ -577,7 +584,7 @@ void TMX::sendMessage(MESSAGE_TYPE type, const std::vector<uint8_t> &message) {
   file.flush();
   file.close();
 #endif
-  serial->write(charMessage);
+  // serial->write(charMessage);
 }
 
 void TMX::sendEmptyMessage() {
