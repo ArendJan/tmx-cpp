@@ -218,7 +218,10 @@ void TMX::parseOne(const std::vector<uint8_t> &message) {
   }
   std::cout << std::endl;
 #endif
-
+  if(message.size() == 1 && message[0] == 0) {
+    std::cout << "parseOne: empty message received" << std::endl;
+    return;
+  }
   boost::asio::post(this->parsePool,
                     std::bind(&TMX::parseOne_task, this, message));
 }
@@ -227,7 +230,6 @@ void TMX::parseOne_task(const std::vector<uint8_t> &message) {
   // Note:: this runs on a different thread than any other things.
   // Makes it possible to have longer running callbacks without interfering with
   // other callbacks and reading in data.
-
   // msg: {len, type, ...}
   auto type = (MESSAGE_IN_TYPE)message[1];
 #ifdef TMX_TX_DEBUG
@@ -399,6 +401,13 @@ void TMX::parseOne_task(const std::vector<uint8_t> &message) {
   } break;
   case MESSAGE_IN_TYPE::SERIAL_LOOP_BACK_REPORT:
     std::cout << "Serial loopback not implemented" << std::endl;
+    // {
+    //       std::cout << "debug len:" << std::dec << (uint)message.size() <<
+    // std::endl; for(auto i = 0; i < message.size(); i++) {
+    //   std::cout << "debug " << i << ":" << std::dec << (uint)message[i] <<
+    //   std::endl;
+    // }
+    }
     break;
   case MESSAGE_IN_TYPE::DHT_REPORT: {
     for (const auto &callback : this->dht_callbacks) {
@@ -570,6 +579,12 @@ void TMX::sendMessage(MESSAGE_TYPE type, const std::vector<uint8_t> &message) {
 #endif
   serial->write(charMessage);
 }
+
+void TMX::sendEmptyMessage() {
+  std::vector<uint8_t> message = {}; // size 0
+  this->sendMessage(message);
+}
+
 void TMX::setPinMode(uint8_t pin, TMX::PIN_MODES mode, bool reporting,
                      uint16_t analog_differential) {
   std::vector<uint8_t> message;
@@ -1161,6 +1176,12 @@ void TMX::ping_task() {
   std::cout << "got feature ping task!" << std::endl;
   if (!this->get_feature(MESSAGE_TYPE::PING).first) {
     std::cout << "ping not supported" << std::endl;
+    std::cerr << "Ping is supported on both Arduino and Pico versions, this shouldn't happen." << std::endl;
+    for(auto i = 0; i < 5; i++) {
+      this->sendEmptyMessage();
+      std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    }
+    throw std::runtime_error("Ping not supported, assuming broken communcation, restart the program.");
     return;
   }
   uint8_t num = 0;
@@ -1168,6 +1189,7 @@ void TMX::ping_task() {
   while (!this->is_stopped) {
     num++;
     this->sendPing(num);
+    this->sendEmptyMessage();
     std::this_thread::sleep_for(std::chrono::milliseconds(400));
     uint8_t diff = num - this->last_ping;
     if (diff > 10) {
@@ -1206,6 +1228,7 @@ void TMX::feature_detect_task() {
   this->feature_detected = false;
   for (auto i = 0; i < (int)MESSAGE_TYPE::MAX && !this->is_stopped; i++) {
     std::this_thread::sleep_for(std::chrono::milliseconds(30));
+    // this->sendEmptyMessage();
     this->sendMessage(MESSAGE_TYPE::FEATURE_REQUEST, {(uint8_t)i});
   }
   if (this->is_stopped) {
