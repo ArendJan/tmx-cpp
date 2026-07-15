@@ -101,6 +101,7 @@ public:
   void sendPing(uint8_t num = 0);
   void sendMessage(const std::vector<uint8_t> &message);
   void sendMessage(MESSAGE_TYPE type, const std::vector<uint8_t> &message);
+  void sendEmptyMessage();
   // Normal functions for use by the user:
   void setPinMode(uint8_t pin, TMX::PIN_MODES mode, bool reporting = true,
                   uint16_t analog_differential = 0);
