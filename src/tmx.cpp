@@ -218,7 +218,7 @@ void TMX::parseOne(const std::vector<uint8_t> &message) {
   }
   std::cout << std::endl;
 #endif
-  if(message.size() == 1 && message[0] == 0) {
+  if (message.size() == 1 && message[0] == 0) {
     std::cout << "parseOne: empty message received" << std::endl;
     return;
   }
@@ -534,12 +534,14 @@ void TMX::sendPing(uint8_t num) {
 void TMX::sendMessage(const std::vector<uint8_t> &message) {
   std::vector<char> charMessage(message.begin(), message.end());
   charMessage.insert(charMessage.begin(), charMessage.size());
-  // serial write sometimes hangs when pico is restarted, use future and async to avoid this
-  std::future<bool> future = std::async(std::launch::async, [this, charMessage]() {
-    serial->write(charMessage);
-    return true;
-  });
-  if(future.wait_for(std::chrono::seconds(1)) == std::future_status::timeout) {
+  // serial write sometimes hangs when pico is restarted, use future and async
+  // to avoid this
+  std::future<bool> future =
+      std::async(std::launch::async, [this, charMessage]() {
+        serial->write(charMessage);
+        return true;
+      });
+  if (future.wait_for(std::chrono::seconds(1)) == std::future_status::timeout) {
     std::cerr << "Serial write timed out" << std::endl;
   }
 #if 0
@@ -563,8 +565,7 @@ void TMX::sendMessage(MESSAGE_TYPE type, const std::vector<uint8_t> &message) {
     return;
   }
   std::vector<uint8_t> charMessage(message.begin(), message.end());
-  charMessage.insert(charMessage.begin(),
-                     {(uint8_t)type});
+  charMessage.insert(charMessage.begin(), {(uint8_t)type});
   this->sendMessage(charMessage);
 #ifdef TMX_TX_DEBUG
   std::cout << "T charMessage = ";
@@ -1183,12 +1184,15 @@ void TMX::ping_task() {
   std::cout << "got feature ping task!" << std::endl;
   if (!this->get_feature(MESSAGE_TYPE::PING).first) {
     std::cout << "ping not supported" << std::endl;
-    std::cerr << "Ping is supported on both Arduino and Pico versions, this shouldn't happen." << std::endl;
-    for(auto i = 0; i < 5; i++) {
+    std::cerr << "Ping is supported on both Arduino and Pico versions, this "
+                 "shouldn't happen."
+              << std::endl;
+    for (auto i = 0; i < 5; i++) {
       this->sendEmptyMessage();
       std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
-    throw std::runtime_error("Ping not supported, assuming broken communcation, restart the program.");
+    throw std::runtime_error("Ping not supported, assuming broken "
+                             "communcation, restart the program.");
     return;
   }
   uint8_t num = 0;
