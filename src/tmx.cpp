@@ -631,8 +631,38 @@ void TMX::setPinMode(uint8_t pin, TMX::PIN_MODES mode, bool reporting,
   this->sendMessage(MESSAGE_TYPE::SET_PIN_MODE, message);
 }
 
+bool TMX::check_pin(uint8_t pin, TMX::PIN_MODES mode) {
+  // TODO: add more checks for other pin modes, like pwm, analog, etc.
+  // TODO: add this check to more functions
+  if (mode == TMX::PIN_MODES::DIGITAL_OUTPUT ||
+      mode == TMX::PIN_MODES::DIGITAL_INPUT) {
+    if (pin >= 0 && pin < this->board_features.digital_pins) {
+      return true;
+    }
+  }
+  if (pin == static_cast<int>(SPECIAL_PINS::LED_PIN) &&
+      mode == TMX::PIN_MODES::DIGITAL_OUTPUT) {
+    // only write to led
+    return true;
+  }
+  if (mode == TMX::PIN_MODES::ANALOG_INPUT) {
+    for (auto &pin : this->board_features.analog_pins_list) {
+      if (pin == pin) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
 void TMX::digitalWrite(uint8_t pin, bool value) {
   std::vector<uint8_t> message = {pin, value};
+  if (!this->check_pin(pin, TMX::PIN_MODES::DIGITAL_OUTPUT)) {
+    std::cout << "digitalWrite: pin " << std::to_string(pin)
+              << " not supported for digital output" << std::endl;
+    return;
+  }
   this->sendMessage(MESSAGE_TYPE::DIGITAL_WRITE, message);
 }
 void TMX::pwmWrite(uint8_t pin, uint16_t value) {
@@ -723,15 +753,16 @@ void TMX::add_callback(
 
 void TMX::add_digital_callback(uint8_t pin,
                                std::function<void(uint8_t, uint8_t)> callback) {
+  if (!this->check_pin(pin, TMX::PIN_MODES::DIGITAL_INPUT)) {
+    std::cout << "add_digital_callback: pin " << (int)pin
+              << " not supported for digital input" << std::endl;
+    return;
+  }
   this->digital_callbacks_pin.push_back({pin, callback});
 }
 
 void TMX::add_analog_callback(uint8_t pin,
                               std::function<void(uint8_t, uint16_t)> callback) {
-  // FIXME: This is Pico specific code
-  // if (pin < 26 || pin > 30) { // only pins 26-30 are analog
-  //   return;
-  // }
   this->analog_callbacks_pin.push_back({pin, callback});
   std::cout << "analog_callbacks_pin size = "
             << this->analog_callbacks_pin.size() << std::endl;

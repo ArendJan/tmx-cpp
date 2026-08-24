@@ -138,6 +138,7 @@ public:
                       bool autoshow = true);
   bool clear_neopixels();
   bool show_neopixels();
+  bool check_pin(uint8_t pin, TMX::PIN_MODES mode);
 
 private:
   uint8_t neopixel_len = 0;
@@ -199,6 +200,11 @@ private:                   /* Ping related elements */
   std::mutex feature_mutex;
   std::condition_variable feature_cv;
   int feature_index = 0;
+};
+
+enum class SPECIAL_PINS {
+  LED_PIN =
+      200, // LED pin is not a real pin, but a special value to indicate the LED
 };
 
 } // namespace tmx_cpp
