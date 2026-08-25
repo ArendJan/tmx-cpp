@@ -34,6 +34,7 @@
 #include <boost/shared_array.hpp>
 #include <mutex>
 #include <string>
+#include <sys/file.h>
 #include <thread>
 
 using namespace std;
@@ -88,7 +89,19 @@ void AsyncSerial::open(const std::string &devname, unsigned int baud_rate,
     close();
 
   setErrorStatus(true); // If an exception is thrown, error_ remains true
+
+  // lock the port, this lock is removed when process is stopped/crashed
+  // or when the port is closed
+
   pimpl->port.open(devname);
+  auto out =
+      flock(pimpl->port.native_handle(), LOCK_EX | LOCK_NB); // lock the port
+
+  if (out != 0) {
+    throw boost::system::system_error(boost::system::error_code(),
+                                      "Failed to lock the port");
+  }
+
   pimpl->port.set_option(asio::serial_port_base::baud_rate(baud_rate));
   pimpl->port.set_option(opt_parity);
   pimpl->port.set_option(opt_csize);
@@ -115,6 +128,7 @@ void AsyncSerial::close() {
   if (!isOpen())
     return;
 
+  flock(pimpl->port.native_handle(), LOCK_UN | LOCK_NB); // unlock the port
   pimpl->open = false;
   pimpl->io.post(boost::bind(&AsyncSerial::doClose, this));
   pimpl->backgroundThread.join();
@@ -253,6 +267,7 @@ void AsyncSerial::setReadCallback(
 void AsyncSerial::clearReadCallback() {
   std::function<void(const char *, size_t)> empty;
   pimpl->callback.swap(empty);
+  flock(pimpl->port.native_handle(), LOCK_UN | LOCK_NB); // unlock the port
 }
 
 #else //__APPLE__
