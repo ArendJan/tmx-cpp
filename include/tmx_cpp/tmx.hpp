@@ -147,7 +147,7 @@ private:
 
   // i2c
 public:
-  bool setI2CPins(uint8_t sda, uint8_t scl, uint8_t port);
+  bool setI2CPins(uint8_t sda, uint8_t scl, uint8_t port, bool force = false);
   bool i2cWrite(uint8_t port, uint8_t address, std::vector<uint8_t> data,
                 std::function<void(bool, std::vector<uint8_t>)> callback,
                 bool nostop = false); // TODO: add timeout

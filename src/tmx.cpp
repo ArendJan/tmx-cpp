@@ -891,7 +891,7 @@ void TMX::stop() {
   }
 }
 
-bool TMX::setI2CPins(uint8_t sda, uint8_t scl, uint8_t port) {
+bool TMX::setI2CPins(uint8_t sda, uint8_t scl, uint8_t port, bool force) {
   // if (sda == 0 || scl == 0 || sda == scl) {
   //   // return false;
   // }
@@ -907,7 +907,7 @@ bool TMX::setI2CPins(uint8_t sda, uint8_t scl, uint8_t port) {
   }
   static bool initialized_ports[MAX_I2C] = {false, false,
                                             false}; // 2 ports for now
-  if (initialized_ports[port]) {
+  if (initialized_ports[port] && !force) {
     return false;
   }
   initialized_ports[port] = true;
