@@ -646,8 +646,8 @@ bool TMX::check_pin(uint8_t pin, TMX::PIN_MODES mode) {
     return true;
   }
   if (mode == TMX::PIN_MODES::ANALOG_INPUT) {
-    for (auto &pin : this->board_features.analog_pins_list) {
-      if (pin == pin) {
+    for (auto &analog_pin : this->board_features.analog_pins_list) {
+      if (pin == analog_pin) {
         return true;
       }
     }
